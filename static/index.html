@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./static/style.css">
+</head>
+
+<body>
+    <div id="input-name">
+        <p>Your Username:</p>
+        <input type="text" id="client-name" name="client-name"><br><br>
+        <p id="duplicated-name">This username is already chosen by someone else...</p>
+        <input type="submit" id="connect-button" value="Connect">
+    </div>
+
+    <div id="main-page">
+        <div id="top-container">
+            <div id="clients-list-holder">
+                <ul id="clients-list"></ul>
+            </div>
+            <div id="private-messages-holder">
+                <ul id="private-messages"></ul>
+            </div>
+        </div>
+        <div id="global-message-logs-holder">
+            <ul id="global-message-logs"></ul>
+        </div>
+    </div>
+
+    <div id="udp-message-holder">
+        <p>Message:</p>
+        <input type="text" id="udp-message" name="udp-message"><br><br>
+        <input type="submit" id="udp-send-button" value="Send">
+    </div>
+
+    <div id="tcp-message-holder">
+        <p>Message:</p>
+        <input type="text" id="tcp-message" name="tcp-message"><br><br>
+        <input type="submit" id="tcp-done-button" value="Done">
+    </div>
+
+    <script src="./static/script.js"></script>
+</body>
+
+</html>

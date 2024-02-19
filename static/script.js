@@ -1,5 +1,5 @@
 const ws_protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-const tcp_packet_size = 24;
+let tcp_packet_size = 6;
 let client_ws = null;
 let global_ws = null;
 let client_name = null;
@@ -25,6 +25,8 @@ function initClient(name) {
         }
     })
     .catch(error => console.error('Error fetching device data:', error));
+    const welcome_message = document.getElementById('welcome-message');
+    welcome_message.textContent = `Welcome to my L&L, ${name}!`;
 };
 
 function initClientWebSocket(name) {
@@ -45,9 +47,13 @@ function addUDPMessage(origin, data) {
     const messages = document.getElementById('private-messages');
     const listItem = document.createElement('li');
     listItem.innerHTML = `
-    <div>${origin}:</div>
-    <div>${data}</div>`;
-    console.log("added new udp message");
+    <div class="udp-message-class">
+        <div class="udp-metadata-tag">
+            <div class="udp-tag">UDP</div>
+            <div class="udp-origin">${origin}:</div>
+        </div>
+        <div class="udp-message-content">${data}</div>
+    </div>`;
     messages.appendChild(listItem);
 };
 
@@ -57,17 +63,26 @@ function addTCPMessage(message_id, origin, data) {
     Array.from(messages.children).forEach(child => {
         if (child.id === message_id) {
             found = true;
-            const dataDiv = child.getElementsByTagName('div')[1]; // Assuming it's always the second div
-            dataDiv.textContent += data;
+            let dataContainer = child.querySelector('.tcp-message-content');
+            if (!dataContainer) {
+                dataContainer = document.createElement('div');
+                dataContainer.className = 'tcp-message-content';
+                child.querySelector('.tcp-message-class').appendChild(dataContainer);
+            }
+            dataContainer.textContent += data;
         }
     });
     if (!found) {
         const listItem = document.createElement('li');
         listItem.id = message_id;
         listItem.innerHTML = `
-        <div>${origin}:</div>
-        <div>${data}</div>`;
-        console.log("added new tcp message");
+        <div class="tcp-message-class">
+            <div class="tcp-metadata-tag">
+                <div class="tcp-tag">TCP</div>
+                <div class="tcp-origin">${origin}:</div>
+            </div>  
+            <div class="tcp-message-content">${data}</div>
+        </div>`;
         messages.appendChild(listItem);
     };
 };
@@ -101,7 +116,7 @@ function populateClients(container, data) {
             const listItem = document.createElement('li');
             listItem.id = item;
             listItem.innerHTML = `
-            <div class="name-tag">${item}</div>
+            <div class="client-name-tag">${item}</div>
             <div class="client-buttons"> 
                 <div class="udp-button">UDP</div>
                 <div class="tcp-button">TCP</div>
@@ -111,14 +126,14 @@ function populateClients(container, data) {
             const udp_button = listItem.querySelector('.udp-button');
             udp_button.addEventListener('click', () => {
                 const udp_holder = document.getElementById('udp-message-holder');
-                udp_holder.style.display = 'block';
+                udp_holder.style.display = 'flex';
                 udp_destination = item;
             });
 
             const tcp_button = listItem.querySelector('.tcp-button');
             tcp_button.addEventListener('click', () => {
                 const tcp_holder = document.getElementById('tcp-message-holder');
-                tcp_holder.style.display = 'block';
+                tcp_holder.style.display = 'flex';
                 tcp_destination = item;
             });
 
@@ -144,17 +159,19 @@ document.getElementById('connect-button').addEventListener('click', function(eve
 });
 
 document.getElementById('udp-send-button').addEventListener('click', function(event){
+    event.stopPropagation();
     event.preventDefault();
     if (udp_destination !== null) {
         const message = document.getElementById('udp-message').value;
-        client_ws.send(JSON.stringify({
-            operation: 'message',
-            uuid: crypto.randomUUID(),
-            to: udp_destination,
-            message: `[BEG]${message}[END]`
-        }));
+        if (message.length > 0) {
+            client_ws.send(JSON.stringify({
+                operation: 'message',
+                uuid: crypto.randomUUID(),
+                to: udp_destination,
+                message: `[BEG]${message}[END]`}))};
         udp_destination = null;
     };
+    document.getElementById('udp-message').value = '';
     document.getElementById('udp-message-holder').style.display = 'none';
 });
 
@@ -176,12 +193,15 @@ document.getElementById('tcp-message').addEventListener('input', function(e) {
             to: tcp_destination,
             message: tcp_message + '[CON]' // Append [CON] to indicate continuation
         }));
-
         tcp_message = '[CON]'; // Clear the message buffer after sending
+        if (tcp_packet_size == 6) {
+            tcp_packet_size = 12;
+        };
     }
 });
 
 document.getElementById('tcp-done-button').addEventListener('click', function(event) {
+    event.stopPropagation();
     event.preventDefault();
     if (tcp_destination !== null) {
         // Send the remaining part of the message with [END] to indicate completion
@@ -193,6 +213,8 @@ document.getElementById('tcp-done-button').addEventListener('click', function(ev
         }));
         tcp_destination = null; // Clear the destination
     }
+    tcp_packet_size = 6;
     tcp_message = '[BEG]'; // Reset the message buffer to its initial state
+    document.getElementById('tcp-message').value = '';
     document.getElementById('tcp-message-holder').style.display = 'none'; // Hide the message holder
 });

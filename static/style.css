@@ -26,8 +26,15 @@ html, body {
     top: 0;
     position: relative;
     width: 90%;
-    height: 100%;
+    height: 95%;
+    gap: 10px;
     flex-direction: column;
+}
+
+#welcome-message {
+    text-align: center;
+    padding: 10px;
+    font-size: 24px;
 }
 
 #top-container {
@@ -37,99 +44,274 @@ html, body {
     max-height: 50%;
     flex-direction: row;
     align-items: center;
-    /* justify-content: space-around; */
+    gap: 10px;
 }
 
 #clients-list-holder {
     border: 1px solid #ddd;
     border-radius: 4px;
-    max-height: 90%;
-    height: 90%;
-    width: 90%;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+}
+
+#clients-list-tag {
+    position: relative;
+    width: 100%;
+    text-align: center;
+    background-color: #f3f1f1;
+    padding: 5px;
+}
+
+#clients-list-inner-holder {
     overflow: auto;
+    height: 100%;
 }
 
 #private-messages-holder {
     border: 1px solid #ddd;
     border-radius: 4px;
-    max-height: 90%;
-    height: 90%;
-    width: 90%;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+}
+
+#private-messages-tag {
+    position: relative;
+    width: 100%;
+    text-align: center;
+    background-color: #f3f1f1;
+    padding: 5px;
+}
+
+#private-messages-inner-holder {
     overflow: auto;
+    height: 100%;
+}
+
+#private-messages {
+    list-style-type: none;
+    padding: 10px;
+}
+
+.udp-message-class, .tcp-message-class {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    margin-bottom: 5px;
+    gap: 7px;
+}
+
+.udp-metadata-tag, .tcp-metadata-tag {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 5px;
+}
+
+.udp-message-content, .tcp-message-content {
+    position: relative;
+    padding: 5px;
+    background-color: #f3f3f3;
+    border-radius: 3px;
+    margin-bottom: 5px;
+}
+
+.udp-message-content::after,
+.tcp-message-content::after
+{
+    content: '';
+	position: absolute;
+	top: 0;
+	left: 10px;
+	width: 0;
+	height: 0;
+	border: 5px solid transparent;
+	border-bottom-color: #f3f3f3;
+	border-top: 0;
+	margin-left: -5px;
+	margin-top: -5px;
+}
+
+.udp-origin, .tcp-origin {
+    font-weight: bold;
+}
+
+.udp-tag {
+    padding: 2px;
+    border-radius: 2px;
+    background: rgb(127, 212, 255);
+}
+
+.tcp-tag {
+    padding: 2px;
+    border-radius: 2px;
+    background: rgb(255, 176, 176);
 }
 
 #global-message-logs-holder {
     border: 1px solid #ddd;
     border-radius: 4px;
-    max-height: 40%;
+    height: 50%;
     width: 100%;
+    overflow: hidden;
+}
+
+#global-message-logs-tag {
+    position: relative;
+    width: 100%;
+    text-align: center;
+    background-color: #f3f1f1;
+    padding: 5px;
+}
+
+#global-message-logs-inner-holder {
     overflow: auto;
+    height: 100%;
+}
+
+#global-message-logs {
+    padding-bottom: 20px;
 }
 
 #clients-list {
     list-style-type: none;
-    padding: 2.5%;
+    padding: 5px;
 }
 
 #clients-list li {
-    margin-bottom: 5px;
-    border: 1px solid #828282;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin: 5px;
+    padding: 5px;
     border-radius: 4px;
+    background: #f3f3f3;
     width: 95%;
 }
 
+.client-name-tag {
+    font-weight: bold;
+    color: #373737;
+}
+
 .client-buttons {
-    margin-top: 15px;
+    width: 100%;
+    position: relative;
+    margin: 10px;
     display: flex;
     flex-direction: row;
+    justify-content: flex-end;
 }
 
 .udp-button {
-    position: relative;
+    padding: 1px;
+    margin-right: 10px;
     text-align: center;
     border: 1px solid #141414;
     border-radius: 3px;
     background-color: rgb(127, 212, 255);
 }
 
+.udp-button:hover {
+    cursor: pointer;
+}
+
 .tcp-button {
-    position: relative;
+    padding: 1px;
+    margin-right: 10px;
     text-align: center;
     border: 1px solid #141414;
     border-radius: 3px;
     background-color: rgb(255, 176, 176);
 }
 
+.tcp-button:hover {
+    cursor: pointer;
+}
+
 .http-button {
-    position: relative;
+    padding: 1px;
+    margin-right: 10px;
     text-align: center;
     border: 1px solid #141414;
     border-radius: 3px;
     background-color: rgb(168, 251, 186);
 }
 
+.http-button:hover {
+    cursor: pointer;
+}
+
 #udp-message-holder {
     display: none;
+    position: fixed;
+    width: 40%;
+    height: 40%;
+    border: 1px solid #141414;
+    border-radius: 3px;
+    background-color: rgb(236, 236, 236);
+    align-items: center;
+    flex-direction: column;
+    margin: 5px;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
 }
 
 #udp-message {
-    display: flex;
+    position: relative;
+    max-height: 80%;
+    height: 60%;
+    width: 90%;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    overflow-y: auto;
 }
 
-#udp-message li {
-    display: flex;
-    flex-direction: row;
+#udp-send-button {
+    cursor: pointer;
 }
 
 #tcp-message-holder {
     display: none;
+    position: fixed;
+    width: 40%;
+    height: 40%;
+    border: 1px solid #141414;
+    border-radius: 3px;
+    background-color: rgb(236, 236, 236);
+    align-items: center;
+    flex-direction: column;
+    margin: 5px;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
 }
 
 #tcp-message {
-    display: flex;
+    position: relative;
+    max-height: 80%;
+    height: 60%;
+    width: 90%;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    overflow-y: auto;
 }
 
-#tcp-message li {
-    display: flex;
-    flex-direction: row;
+textarea {
+    /* iOS Safari */
+    -webkit-touch-callout: auto;
+    /* Safari */
+    -webkit-user-select: auto;
+    /* Konqueror HTML */
+    -khtml-user-select: auto;
+    /* Firefox */
+    -moz-user-select: auto;
+    /* Internet Explorer/Edge */
+    -ms-user-select: auto;
+    /* Non-prefixed version, currently supported by Chrome and Opera */
+    user-select: auto;
 }

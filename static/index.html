@@ -15,28 +15,38 @@
     </div>
 
     <div id="main-page">
+        <div id="welcome-message"></div>
         <div id="top-container">
             <div id="clients-list-holder">
-                <ul id="clients-list"></ul>
+                <div id="clients-list-tag">Active Connections</div>
+                <div id="clients-list-inner-holder">
+                    <ul id="clients-list"></ul>
+                </div>
             </div>
             <div id="private-messages-holder">
-                <ul id="private-messages"></ul>
+                <div id="private-messages-tag">Messages Inbox</div>
+                <div id="private-messages-inner-holder">
+                    <ul id="private-messages"></ul>
+                </div>
             </div>
         </div>
         <div id="global-message-logs-holder">
-            <ul id="global-message-logs"></ul>
+            <div id="global-message-logs-tag">All Messages</div>
+            <div id="global-message-logs-inner-holder">
+                <ul id="global-message-logs"></ul>
+            </div>
         </div>
     </div>
 
     <div id="udp-message-holder">
         <p>Message:</p>
-        <input type="text" id="udp-message" name="udp-message"><br><br>
+        <textarea id="udp-message" name="udp-message"></textarea><br><br>
         <input type="submit" id="udp-send-button" value="Send">
     </div>
 
     <div id="tcp-message-holder">
         <p>Message:</p>
-        <input type="text" id="tcp-message" name="tcp-message"><br><br>
+        <textarea id="tcp-message" name="tcp-message"></textarea><br><br>
         <input type="submit" id="tcp-done-button" value="Done">
     </div>
 

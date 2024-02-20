@@ -50,6 +50,24 @@
         <input type="submit" id="tcp-done-button" value="Done">
     </div>
 
+    <div id="http-request-holder">
+        <div>I would like to</div>
+        <select name="http-method" id="http-method"> 
+            <option value="GET">GET</option> 
+            <option value="POST">POST</option> 
+        </select>
+        <div class="http-request-destination"></div>
+        <select name="http-get-options" id="http-get-options"> 
+            <option value="Age">Age</option> 
+            <option value="Favoriate Food">Favoriate Food</option> 
+        </select>
+        <textarea id="http-post-body" name="http-post-body"></textarea><br><br>
+    </div>
+
+    <div id="http-response-holder">
+        
+    </div>
+
     <script src="./static/script.js"></script>
 </body>
 

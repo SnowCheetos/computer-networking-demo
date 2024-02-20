@@ -185,9 +185,16 @@ html, body {
     align-items: center;
     margin: 5px;
     padding: 5px;
+    padding-left: 10px;
     border-radius: 4px;
     background: #f3f3f3;
     width: 95%;
+}
+
+#clients-list li:hover
+{
+    cursor: pointer;
+    border: 1px solid #bcbcbc;
 }
 
 .client-name-tag {
@@ -204,50 +211,82 @@ html, body {
     justify-content: flex-end;
 }
 
-.udp-button {
-    padding: 1px;
+.udp-button,
+.tcp-button,
+.http-button
+{
+    padding: 2px;
     margin-right: 10px;
     text-align: center;
     border: 1px solid #141414;
     border-radius: 3px;
+}
+
+.udp-button {
     background-color: rgb(127, 212, 255);
 }
 
-.udp-button:hover {
-    cursor: pointer;
-}
-
 .tcp-button {
-    padding: 1px;
-    margin-right: 10px;
-    text-align: center;
-    border: 1px solid #141414;
-    border-radius: 3px;
     background-color: rgb(255, 176, 176);
 }
 
-.tcp-button:hover {
-    cursor: pointer;
-}
-
 .http-button {
-    padding: 1px;
-    margin-right: 10px;
-    text-align: center;
-    border: 1px solid #141414;
-    border-radius: 3px;
     background-color: rgb(168, 251, 186);
 }
 
-.http-button:hover {
+.udp-button:hover,
+.tcp-button:hover,
+.http-button:hover
+{
     cursor: pointer;
+    box-shadow: 1px 1px 1px #373737;
 }
 
-#udp-message-holder {
+#udp-message-holder,
+#tcp-message-holder
+{
     display: none;
     position: fixed;
     width: 40%;
     height: 40%;
+    border: 1px solid #141414;
+    border-radius: 3px;
+    background-color: rgb(245, 245, 245);
+    align-items: center;
+    flex-direction: column;
+    margin: 5px;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+}
+
+#udp-message,
+#tcp-message
+{
+    resize: none;
+    position: relative;
+    max-height: 80%;
+    height: 60%;
+    width: 90%;
+    border: 1px solid #b3b3b3;
+    border-radius: 3px;
+    overflow-y: auto;
+}
+
+#udp-send-button:hover,
+#tcp-done-button:hover
+{
+    cursor: pointer;
+}
+
+#http-request-holder,
+#http-response-holder
+{
+    display: none;
+    position: fixed;
+    width: 30%;
+    height: 30%;
     border: 1px solid #141414;
     border-radius: 3px;
     background-color: rgb(236, 236, 236);
@@ -258,47 +297,6 @@ html, body {
     top: 50%;
     transform: translate(-50%, -50%);
     z-index: 1000;
-}
-
-#udp-message {
-    position: relative;
-    max-height: 80%;
-    height: 60%;
-    width: 90%;
-    border: 1px solid #ccc;
-    border-radius: 3px;
-    overflow-y: auto;
-}
-
-#udp-send-button {
-    cursor: pointer;
-}
-
-#tcp-message-holder {
-    display: none;
-    position: fixed;
-    width: 40%;
-    height: 40%;
-    border: 1px solid #141414;
-    border-radius: 3px;
-    background-color: rgb(236, 236, 236);
-    align-items: center;
-    flex-direction: column;
-    margin: 5px;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 1000;
-}
-
-#tcp-message {
-    position: relative;
-    max-height: 80%;
-    height: 60%;
-    width: 90%;
-    border: 1px solid #ccc;
-    border-radius: 3px;
-    overflow-y: auto;
 }
 
 textarea {

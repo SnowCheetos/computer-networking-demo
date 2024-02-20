@@ -124,18 +124,27 @@ function populateClients(container, data) {
             </div>`;
 
             const udp_button = listItem.querySelector('.udp-button');
-            udp_button.addEventListener('click', () => {
+            udp_button.addEventListener('click', (event) => {
+                event.stopPropagation();
                 const udp_holder = document.getElementById('udp-message-holder');
                 udp_holder.style.display = 'flex';
                 udp_destination = item;
             });
 
             const tcp_button = listItem.querySelector('.tcp-button');
-            tcp_button.addEventListener('click', () => {
+            tcp_button.addEventListener('click', (event) => {
+                event.stopPropagation();
                 const tcp_holder = document.getElementById('tcp-message-holder');
                 tcp_holder.style.display = 'flex';
                 tcp_destination = item;
             });
+
+            const http_button = listItem.querySelector('.http-button');
+            http_button.addEventListener('click', (event) => {
+                event.stopPropagation();
+                const http_request_holder = document.getElementById('http-request-holder');
+                http_request_holder.style.display = 'flex';
+            })
 
             container.appendChild(listItem);
         }
@@ -205,12 +214,12 @@ document.getElementById('tcp-done-button').addEventListener('click', function(ev
     event.preventDefault();
     if (tcp_destination !== null) {
         // Send the remaining part of the message with [END] to indicate completion
-        client_ws.send(JSON.stringify({
-            operation: 'message',
-            uuid: tcp_uuid,
-            to: tcp_destination,
-            message: tcp_message + '[END]'
-        }));
+        if (tcp_message !== '[BEG]') {
+            client_ws.send(JSON.stringify({
+                operation: 'message',
+                uuid: tcp_uuid,
+                to: tcp_destination,
+                message: tcp_message + '[END]'}))};
         tcp_destination = null; // Clear the destination
     }
     tcp_packet_size = 6;

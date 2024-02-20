@@ -23,8 +23,8 @@ def make_log_message(timestamp: str, message: str) -> str:
     return f"""
     <div class="global-message-class">
         <div class="global-message-meta">
-            <div class="log-tag">LOG</div>
             <div class="timestamp-class">{timestamp}</div>
+            <div class="log-tag">LOG</div>
             <div>{message}</div>
         </div>
     </div>
@@ -34,8 +34,8 @@ def make_udp_message(timestamp: str, source: str, target: str, message: str) -> 
     return f"""
     <div class="global-message-class">
         <div class="global-message-meta">
-            <div class="udp-tag">UDP</div>
             <div class="timestamp-class">{timestamp}</div>
+            <div class="udp-tag">UDP</div>
             <div class="name-tag">{source}</div>
             <div>sent a message to</div>
             <div class="name-tag">{target}:</div>
@@ -48,8 +48,8 @@ def make_tcp_message(timestamp: str, source: str, target: str, message: str) -> 
     return f"""
     <div class="global-message-class">
         <div class="global-message-meta">
-            <div class="tcp-tag">TCP</div>
             <div class="timestamp-class">{timestamp}</div>
+            <div class="tcp-tag">TCP</div>
             <div class="name-tag">{source}</div>
             <div>sent a message to</div>
             <div class="name-tag">{target}:</div>
@@ -62,8 +62,8 @@ def make_get_message(timestamp: str, source: str, target: str, message: str) -> 
     return f"""
     <div class="global-message-class">
         <div class="global-message-meta">
-            <div class="get-tag">GET</div>
             <div class="timestamp-class">{timestamp}</div>
+            <div class="get-tag">GET</div>
             <div class="name-tag">{source}</div>
             <div>sent a message to</div>
             <div class="name-tag">{target}:</div>
@@ -76,8 +76,8 @@ def make_post_message(timestamp: str, source: str, target: str, message: str) ->
     return f"""
     <div class="global-message-class">
         <div class="global-message-meta">
-            <div class="post-tag">POST</div>
             <div class="timestamp-class">{timestamp}</div>
+            <div class="post-tag">POST</div>
             <div class="name-tag">{source}</div>
             <div>sent a message to</div>
             <div class="name-tag">{target}:</div>
@@ -90,8 +90,8 @@ def make_http_message(timestamp: str, source: str, target: str, message: str) ->
     return f"""
     <div class="global-message-class">
         <div class="global-message-meta">
-            <div class="http-tag">HTTP</div>
             <div class="timestamp-class">{timestamp}</div>
+            <div class="http-tag">HTTP</div>
             <div class="name-tag">{source}</div>
             <div>sent a message to</div>
             <div class="name-tag">{target}:</div>

@@ -53,7 +53,7 @@ function encrypt(message, secretKey) {
 }
 
 function decrypt(ciphertext, secretKey) {
-    var bytes  = CryptoJS.AES.decrypt(ciphertext, secretKey);
+    var bytes = CryptoJS.AES.decrypt(ciphertext, secretKey);
     return bytes.toString(CryptoJS.enc.Utf8);
 }
 
@@ -173,8 +173,8 @@ function addRESMessage(timestamp, message_id, origin, data, https) {
     listItem.innerHTML = `
     <div class="http-message-class">
         <div class="http-metadata-tag">
-            <div class="http-tag">HTTP</div>
             <div class="timestamp-class">${timestamp}</div>
+            <div class="http-tag">HTTP</div>
             <div class="http-origin">${origin}:</div>
         </div>
         <div class="http-message-content">
@@ -196,8 +196,8 @@ function addUDPMessage(timestamp, origin, data) {
     listItem.innerHTML = `
     <div class="udp-message-class">
         <div class="udp-metadata-tag">
-            <div class="udp-tag">UDP</div>
             <div class="timestamp-class">${timestamp}</div>
+            <div class="udp-tag">UDP</div>
             <div class="udp-origin">${origin}:</div>
         </div>
         <div class="udp-message-content">${data}</div>
@@ -220,8 +220,8 @@ function addGETMessage(timestamp, message_id, origin, data, https) {
     listItem.innerHTML = `
     <div class="get-message-class">
         <div class="get-metadata-tag">
-            <div class="get-tag">GET</div>
             <div class="timestamp-class">${timestamp}</div>
+            <div class="get-tag">GET</div>
             <div class="get-origin">${origin}:</div>
         </div>
         <div class="http-message-content">
@@ -256,8 +256,8 @@ function addPOSTMessage(timestamp, message_id, origin, data, https) {
     listItem.innerHTML = `
     <div class="post-message-class">
         <div class="post-metadata-tag">
-            <div class="post-tag">POST</div>
             <div class="timestamp-class">${timestamp}</div>
+            <div class="post-tag">POST</div>
             <div class="post-origin">${origin}:</div>
         </div>
         <div class="http-message-content">
@@ -299,8 +299,8 @@ function addTCPMessage(timestamp, message_id, origin, data) {
         listItem.innerHTML = `
         <div class="tcp-message-class">
             <div class="tcp-metadata-tag">
-                <div class="tcp-tag">TCP</div>
                 <div class="timestamp-class">${timestamp}</div>
+                <div class="tcp-tag">TCP</div>
                 <div class="tcp-origin">${origin}:</div>
             </div>  
             <div class="tcp-message-content">${data}</div>

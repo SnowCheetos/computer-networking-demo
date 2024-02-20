@@ -266,12 +266,14 @@ html, body {
 }
 
 .global-message-content {
+    display: inline-block;
     position: relative;
     padding: 5px;
     background-color: #f3f3f3;
     border-radius: 3px;
     margin-bottom: 5px;
     align-items: center;
+    width: max-content;
 }
 
 .global-message-class {

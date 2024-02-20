@@ -1,4 +1,7 @@
 const ws_protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+const response_holder = document.getElementById('http-response-holder');
+const respond_button = response_holder.querySelector('.http-response-send-button');
+const max_messages = 10;
 let tcp_packet_size = 6;
 let client_ws = null;
 let global_ws = null;
@@ -15,8 +18,31 @@ let http_requests = {};
 let curr_http_origin = null;
 let curr_message_id = null;
 let curr_response_btn_id = null;
-const response_holder = document.getElementById('http-response-holder');
-const respond_button = response_holder.querySelector('.http-response-send-button');
+
+function trimListToMaxSize(ulId, maxSize) {
+    // Select the unordered list by its ID
+    const ul = document.getElementById(ulId);
+
+    // Check if the list exists
+    if (!ul) {
+        console.log('List not found!');
+        return;
+    }
+
+    // While the number of <li> elements in the list exceeds maxSize, remove the first one
+    while (ul.children.length > maxSize) {
+        // Remove the first child <li> element
+        ul.removeChild(ul.firstChild);
+    }
+}
+
+function cachePrivateMessages() {
+    sessionStorage.setItem('messages', document.getElementById('private-messages').innerHTML);
+}
+
+function loadCachedMessages() {
+    document.getElementById('private-messages').innerHTML = sessionStorage.getItem('messages');
+}
 
 if (sessionStorage.getItem('name') !== null) {
     client_name = sessionStorage.getItem('name');
@@ -41,6 +67,7 @@ respond_button.addEventListener('click', (event) => {
         curr_http_origin = null;
         curr_response_btn_id = null
         response_holder.querySelector('.http-response-body').value = '';
+        cachePrivateMessages();
     }
 });
 
@@ -57,6 +84,7 @@ function initClient(name) {
     .catch(error => console.error('Error fetching device data:', error));
     const welcome_message = document.getElementById('welcome-message');
     welcome_message.textContent = `Welcome to my L&L, ${name}!`;
+    loadCachedMessages();
 };
 
 function initClientWebSocket(name) {
@@ -74,6 +102,8 @@ function initClientWebSocket(name) {
         } else if (data.type === 'response') {
             addRESMessage(data.uuid, data.from, data.message);
         };
+        trimListToMaxSize('private-messages', max_messages);
+        cachePrivateMessages();
     };
     document.getElementById('input-name').style.display = 'none';
     document.getElementById('main-page').style.display = 'flex';

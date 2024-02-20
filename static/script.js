@@ -7,7 +7,10 @@ let udp_destination = null;
 let tcp_destination = null;
 let http_destination = null;
 let tcp_message = '[BEG]';
-let tcp_uuid = null;
+let tcp_uuid = crypto.randomUUID();
+let http_method = 'GET';
+let http_request_uuid = null;
+let http_response_uuid = null;
 
 if (sessionStorage.getItem('name') !== null) {
     client_name = sessionStorage.getItem('name');
@@ -35,13 +38,31 @@ function initClientWebSocket(name) {
         const data = JSON.parse(event.data);
         if (data.type === 'udp') {
             addUDPMessage(data.from, data.message);
-        } else if (data.type == 'tcp') {
+        } else if (data.type === 'tcp') {
             addTCPMessage(data.uuid, data.from, data.message);
+        } else if (data.type === 'get') {
+            addGETMessage(data.uuid, data.from, data.message);
+        } else if (data.type === 'response') {
+            addRESMessage(data.uuid, data.from, data.message);
         };
     };
     document.getElementById('input-name').style.display = 'none';
     document.getElementById('main-page').style.display = 'flex';
 };
+
+function addRESMessage(message_id, origin, data) {
+    const messages = document.getElementById('private-messages');
+    const listItem = document.createElement('li');
+    listItem.innerHTML = `
+    <div class="http-message-class">
+        <div class="http-metadata-tag">
+            <div class="http-tag">HTTP</div>
+            <div class="http-origin">${origin}:</div>
+        </div>
+        <div class="http-message-content">${data}</div>
+    </div>`;
+    messages.appendChild(listItem);
+}
 
 function addUDPMessage(origin, data) {
     const messages = document.getElementById('private-messages');
@@ -57,12 +78,52 @@ function addUDPMessage(origin, data) {
     messages.appendChild(listItem);
 };
 
+function addGETMessage(message_id, origin, data) {
+    const messages = document.getElementById('private-messages');
+    const listItem = document.createElement('li');
+    listItem.id = message_id;
+    listItem.innerHTML = `
+    <div class="get-message-class">
+        <div class="get-metadata-tag">
+            <div class="get-tag">GET</div>
+            <div class="get-origin">${origin}:</div>
+        </div>
+        <div class="http-message-content">
+            <div>What is your ${data}?</div>
+            <div class="http-response-button">Respond</div>
+        </div>
+    </div>`;
+    const response_button = listItem.querySelector('.http-response-button');
+    response_button.addEventListener('click', (event) => {
+        event.stopPropagation();
+        event.preventDefault();
+        const response_holder = document.getElementById('http-response-holder');
+        response_holder.style.display = 'flex';
+        const respond_button = response_holder.querySelector('.http-response-send-button');
+        respond_button.addEventListener('click', (event) => {
+            event.stopPropagation();
+            event.preventDefault();
+            const message = response_holder.querySelector('.http-response-body').value;
+            client_ws.send(JSON.stringify({
+                operation: 'response',
+                uuid: message_id,
+                to: origin,
+                message: `[RES]My ${data} is ${message}[END]`
+            }));
+            response_button.style.display = 'none';
+            response_holder.style.display = 'none';
+        });
+    });
+    messages.appendChild(listItem);
+};
+
 function addTCPMessage(message_id, origin, data) {
     const messages = document.getElementById('private-messages');
     let found = false;
     Array.from(messages.children).forEach(child => {
         if (child.id === message_id) {
             found = true;
+            console.log(message_id);
             let dataContainer = child.querySelector('.tcp-message-content');
             if (!dataContainer) {
                 dataContainer = document.createElement('div');
@@ -125,6 +186,7 @@ function populateClients(container, data) {
 
             const udp_button = listItem.querySelector('.udp-button');
             udp_button.addEventListener('click', (event) => {
+                event.preventDefault();
                 event.stopPropagation();
                 const udp_holder = document.getElementById('udp-message-holder');
                 udp_holder.style.display = 'flex';
@@ -133,6 +195,7 @@ function populateClients(container, data) {
 
             const tcp_button = listItem.querySelector('.tcp-button');
             tcp_button.addEventListener('click', (event) => {
+                event.preventDefault();
                 event.stopPropagation();
                 const tcp_holder = document.getElementById('tcp-message-holder');
                 tcp_holder.style.display = 'flex';
@@ -141,9 +204,13 @@ function populateClients(container, data) {
 
             const http_button = listItem.querySelector('.http-button');
             http_button.addEventListener('click', (event) => {
+                event.preventDefault();
                 event.stopPropagation();
                 const http_request_holder = document.getElementById('http-request-holder');
+                document.getElementById('http-get-destination').textContent = `${item}'s`;
+                document.getElementById('http-post-destination').textContent = item;
                 http_request_holder.style.display = 'flex';
+                http_destination = item;
             })
 
             container.appendChild(listItem);
@@ -174,7 +241,7 @@ document.getElementById('udp-send-button').addEventListener('click', function(ev
         const message = document.getElementById('udp-message').value;
         if (message.length > 0) {
             client_ws.send(JSON.stringify({
-                operation: 'message',
+                operation: 'udp',
                 uuid: crypto.randomUUID(),
                 to: udp_destination,
                 message: `[BEG]${message}[END]`}))};
@@ -185,9 +252,6 @@ document.getElementById('udp-send-button').addEventListener('click', function(ev
 });
 
 document.getElementById('tcp-message').addEventListener('input', function(e) {
-    if (tcp_message === '[BEG]') {
-        tcp_uuid = crypto.randomUUID();
-    };
     // Append only the new input value
     let newInput = e.data; // Gets the input character
     if (!newInput) return; // If no input (e.g., delete), then do nothing
@@ -197,7 +261,7 @@ document.getElementById('tcp-message').addEventListener('input', function(e) {
     if (tcp_destination !== null && tcp_message.length >= tcp_packet_size) {
         // Send the current message chunk
         client_ws.send(JSON.stringify({
-            operation: 'message',
+            operation: 'tcp',
             uuid: tcp_uuid,
             to: tcp_destination,
             message: tcp_message + '[CON]' // Append [CON] to indicate continuation
@@ -216,7 +280,7 @@ document.getElementById('tcp-done-button').addEventListener('click', function(ev
         // Send the remaining part of the message with [END] to indicate completion
         if (tcp_message !== '[BEG]') {
             client_ws.send(JSON.stringify({
-                operation: 'message',
+                operation: 'tcp',
                 uuid: tcp_uuid,
                 to: tcp_destination,
                 message: tcp_message + '[END]'}))};
@@ -224,6 +288,61 @@ document.getElementById('tcp-done-button').addEventListener('click', function(ev
     }
     tcp_packet_size = 6;
     tcp_message = '[BEG]'; // Reset the message buffer to its initial state
+    tcp_uuid = crypto.randomUUID();
     document.getElementById('tcp-message').value = '';
     document.getElementById('tcp-message-holder').style.display = 'none'; // Hide the message holder
+});
+
+document.getElementById('http-method').addEventListener('change', function() {
+    http_method = this.value;
+
+    switch (http_method) {
+        case 'GET':
+            document.getElementById('http-get-configuration').style.display = 'inline';
+            document.getElementById('http-post-configuration').style.display = 'none';
+            document.getElementById('http-post-body').style.display = 'none';
+            break;
+
+        case 'POST':
+            document.getElementById('http-post-configuration').style.display = 'inline';
+            document.getElementById('http-get-configuration').style.display = 'none';
+            document.getElementById('http-post-body').style.display = 'flex';
+            break;
+
+        default:
+            document.getElementById('http-get-configuration').style.display = 'inline';
+            document.getElementById('http-post-configuration').style.display = 'none';
+            document.getElementById('http-post-body').style.display = 'none';
+            break;
+    }
+});
+
+document.getElementById('http-send-button').addEventListener('click', function(event) {
+    event.stopPropagation();
+    event.preventDefault();
+    http_request_uuid = crypto.randomUUID();
+    if (http_destination !== null) {
+        if (http_method === 'GET') {
+            const get_option = document.getElementById('http-get-options').value;
+            client_ws.send(JSON.stringify({
+                operation: 'get',
+                uuid: http_request_uuid,
+                to: http_destination,
+                message: `[BEG]${get_option}[REQ]`}));
+
+        } else if (http_method === 'POST') {
+            const post_body = document.getElementById('http-post-body').value;
+            if (post_body.length > 0) {
+                client_ws.send(JSON.stringify({
+                    operation: 'post',
+                    uuid: http_request_uuid,
+                    to: http_destination,
+                    message: `[BEG]${post_body}[REQ]`}))};
+        }
+    }
+    http_destination = null;
+    http_request_uuid = null;
+    document.getElementById('http-get-destination').textContent = '';
+    document.getElementById('http-post-destination').textContent = '';
+    document.getElementById('http-request-holder').style.display = 'none';
 });

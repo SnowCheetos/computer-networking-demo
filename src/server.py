@@ -17,11 +17,11 @@ class Server:
     async def client_connected(self, client_name: str):
         return await self.redis_client.sismember("clients", client_name)
 
-    async def send_message(self, uuid: str, source: str, target: str, message: str):
+    async def send_message(self, operation: str, uuid: str, source: str, target: str, message: str):
         if await self.client_connected(source) and await self.client_connected(target):
             timestamp = str(datetime.now())
             await self.redis_client.publish(
                 f"{target}:message_channel", 
-                f"{uuid}={source}@{timestamp}{message}")
+                f"{operation}~{uuid}={source}@{timestamp}//{message}")
             await self.write_to_queue(
-                f"{uuid}={source}->{target}@{timestamp}{message}")
+                f"{uuid}={source}->{target}@{timestamp}//{message}")

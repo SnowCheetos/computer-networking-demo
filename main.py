@@ -35,8 +35,14 @@ async def init_client(client_name: str):
 async def ws_handler(ws: WebSocket, s: Server, name: str):
     while ws.client_state != WebSocketState.DISCONNECTED:
         data = await ws.receive_json()
-        if data["operation"] == "message":
-            await s.send_message(data["uuid"], name, data["to"], data["message"])
+        # if data["operation"] == "message":
+        #     await s.send_message(data["operation"], data["uuid"], name, data["to"], data["message"])
+        # elif data["operation"] == "get":
+        #     await s.send_message(data["operation"], name, data["to"], data["message"])
+        # elif data["operation"] == "post":
+        #     await s.send_message(data["operation"], name, data["to"], data["message"])
+        # elif data["operation"] == "response":
+        await s.send_message(data["operation"], data["uuid"], name, data["to"], data["message"])
 
 async def ps_handler(ws: WebSocket, s: Server, name: str):
     message_channel = s.redis_client.pubsub()
@@ -45,22 +51,21 @@ async def ps_handler(ws: WebSocket, s: Server, name: str):
     while ws.client_state != WebSocketState.DISCONNECTED:
         message = await message_channel.get_message(ignore_subscribe_messages=True, timeout=0.1)
         if message:
-            if "[BEG]" in message["data"] and "[END]" in message["data"]:
-                # Both begin and end present in message, assuming to be udp
-                source, data = message["data"].split("[BEG]")
+            operation, data = message["data"].split("~")
+            if operation == "udp":
+                source, data_ = message["data"].split("//")
                 uuid, meta = source.split("=")
                 origin, timestamp = meta.split("@")
                 payload = {
                     "type": "udp",
-                    "uuid": uuid,
+                    "uuid": uuid.split("~")[1],
                     "timestamp": timestamp,
                     "from": origin,
-                    "message": data.split("[END]")[0]
+                    "message": (data_.split("[BEG]")[1]).split("[END]")[0]
                 }
                 await ws.send_json(payload)
 
-            elif "[CON]" in message["data"]:
-                # Continuation flag present, assuming to be TCP
+            elif operation == "tcp":
                 if "[BEG]" in message["data"]:
                     source, data = message["data"].split("[BEG]")
                     uuid, meta = source.split("=")
@@ -72,10 +77,36 @@ async def ps_handler(ws: WebSocket, s: Server, name: str):
                     origin, timestamp = meta.split("@")
                 payload = {
                     "type": "tcp",
-                    "uuid": uuid,
+                    "uuid": uuid.split("~")[1],
                     "timestamp": timestamp,
                     "from": origin,
                     "message": data
+                }
+                await ws.send_json(payload)
+
+            elif operation == "get":
+                source, data_ = message["data"].split("//")
+                uuid, meta = source.split("=")
+                origin, timestamp = meta.split("@")
+                payload = {
+                    "type": "get",
+                    "uuid": uuid.split("~")[1],
+                    "timestamp": timestamp,
+                    "from": origin,
+                    "message": (data_.split("[BEG]")[1]).split("[REQ]")[0].lower()
+                }
+                await ws.send_json(payload)
+
+            elif operation == "response":
+                source, data_ = message["data"].split("//")
+                uuid, meta = source.split("=")
+                origin, timestamp = meta.split("@")
+                payload = {
+                    "type": "response",
+                    "uuid": uuid.split("~")[1],
+                    "timestamp": timestamp,
+                    "from": origin,
+                    "message": (data_.split("[RES]")[1]).split("[END]")[0].lower()
                 }
                 await ws.send_json(payload)
 
@@ -93,10 +124,10 @@ async def connection_handler(websocket: WebSocket, client_name: str):
         await asyncio.gather(ws_handler_task, ps_handler_task)
 
     except WebSocketDisconnect as e:
-        pass
+        print(str(e))
 
     except Exception as e:
-        pass
+        print(str(e))
 
     finally:
         for task in (ws_handler_task, ps_handler_task):

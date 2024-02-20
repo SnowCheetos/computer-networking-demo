@@ -51,21 +51,36 @@
     </div>
 
     <div id="http-request-holder">
-        <div>I would like to</div>
-        <select name="http-method" id="http-method"> 
-            <option value="GET">GET</option> 
-            <option value="POST">POST</option> 
-        </select>
-        <div class="http-request-destination"></div>
-        <select name="http-get-options" id="http-get-options"> 
-            <option value="Age">Age</option> 
-            <option value="Favoriate Food">Favoriate Food</option> 
-        </select>
+        <div id="http-request">
+            <div>I would like to</div>
+            <select name="http-method" id="http-method"> 
+                <option value="GET">GET</option> 
+                <option value="POST">POST</option> 
+            </select>
+
+            <div id="http-get-configuration">
+                <div id="http-get-destination"></div>
+                <select name="http-get-options" id="http-get-options"> 
+                    <option value="Age">Age</option> 
+                    <option value="Favoriate Food">Favoriate Food</option> 
+                </select>
+            </div>
+
+            <div id="http-post-configuration">
+                <div>this question to</div>
+                <div id="http-post-destination"></div>
+                <div>and get their response:</div>
+            </div>
+        </div>
         <textarea id="http-post-body" name="http-post-body"></textarea><br><br>
+
+        <input type="submit" id="http-send-button" value="Send">
     </div>
 
     <div id="http-response-holder">
-        
+        <div>Response:</div>
+        <textarea class="http-response-body" name="http-response-body"></textarea><br><br>
+        <input type="submit" class="http-response-send-button" value="Send">
     </div>
 
     <script src="./static/script.js"></script>

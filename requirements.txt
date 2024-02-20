@@ -1,3 +1,6 @@
 fastapi
 redis[hiredis]
-uvicorn
+uvicorn[standard]
+gunicorn
+pycryptodome
+pycryptodomex

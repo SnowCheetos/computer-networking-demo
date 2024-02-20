@@ -1,10 +1,11 @@
 html, body {
-    height: 100%;
-    width: 100%;
+    height: 99%;
+    width: 99%;
     margin: 0;
     display: flex;
     font-family: Courier New, monospace;
     justify-content: center;
+    touch-action: manipulation;
 }
 
 #input-name {
@@ -14,6 +15,18 @@ html, body {
     text-align: center;
     margin: auto;
     display: inline-block;
+}
+
+#connect-button {
+    cursor: pointer;
+    border: 1px solid #373737;
+    border-radius: 5px;
+    background-color: greenyellow;
+    z-index: 5000;
+}
+
+#connect-button:hover {
+    border: 2px solid #373737;
 }
 
 #duplicated-name {
@@ -148,8 +161,24 @@ html, body {
 .tcp-origin,
 .get-origin,
 .post-origin,
-.http-origin {
+.http-origin,
+.name-tag {
     font-weight: bold;
+}
+
+.timestamp-class {
+    color: #ffffff;
+    font-size: 12px;
+    border-radius: 3px;
+    background-color: #5c5c5c;
+    vertical-align: middle;
+    padding: 2px;
+}
+
+.log-tag {
+    padding: 2px;
+    border-radius: 2px;
+    background: rgb(255, 242, 145);
 }
 
 .udp-tag {
@@ -223,7 +252,48 @@ html, body {
 }
 
 #global-message-logs {
+    list-style-type: none;
     padding-bottom: 20px;
+    flex-grow: 30;
+}
+
+.global-message-meta {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+}
+
+.global-message-content {
+    position: relative;
+    padding: 5px;
+    background-color: #f3f3f3;
+    border-radius: 3px;
+    margin-bottom: 5px;
+    align-items: center;
+}
+
+.global-message-class {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin-bottom: 10px;
+}
+
+.global-message-content::after
+{
+    content: '';
+	position: absolute;
+	top: 0;
+	left: 10px;
+	width: 0;
+	height: 0;
+	border: 6px solid transparent;
+	border-bottom-color: #f3f3f3;
+	border-top: 0;
+	margin-left: -5px;
+	margin-top: -5px;
 }
 
 #clients-list {
@@ -265,7 +335,8 @@ html, body {
 
 .udp-button,
 .tcp-button,
-.http-button
+.http-button,
+.https-button
 {
     padding: 2px;
     margin-right: 10px;
@@ -286,9 +357,14 @@ html, body {
     background-color: rgb(168, 251, 186);
 }
 
+.https-button {
+    background-color: rgb(249, 211, 130);
+}
+
 .udp-button:hover,
 .tcp-button:hover,
-.http-button:hover
+.http-button:hover,
+.https-button:hover
 {
     cursor: pointer;
     box-shadow: 1px 1px 1px #373737;

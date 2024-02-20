@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang=en touchmove>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <link rel="stylesheet" href="./static/style.css">
 </head>
 
@@ -11,7 +11,7 @@
         <p>Your Username:</p>
         <input type="text" id="client-name" name="client-name"><br><br>
         <p id="duplicated-name">This username is already chosen by someone else...</p>
-        <input type="submit" id="connect-button" value="Connect">
+        <div id="connect-button" role="button" tabindex="0" onclick="">Connect</div>
     </div>
 
     <div id="main-page">
@@ -82,7 +82,8 @@
         <input type="submit" class="http-response-send-button" value="Send">
     </div>
 
-    <script src="./static/script.js"></script>
+    <script type="module" src="./static/script.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>
 </body>
 
 </html>

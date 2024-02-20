@@ -17,11 +17,24 @@ class Server:
     async def client_connected(self, client_name: str):
         return await self.redis_client.sismember("clients", client_name)
 
-    async def send_message(self, operation: str, uuid: str, source: str, target: str, message: str):
+    async def send_message(self, operation: str, uuid: str, source: str, target: str, message: str, https: bool):
+        if https: operation += "s"
         if await self.client_connected(source) and await self.client_connected(target):
-            timestamp = str(datetime.now())
+            timestamp = get_timestamp()
             await self.redis_client.publish(
                 f"{target}:message_channel", 
                 f"{operation}~{uuid}={source}@{timestamp}//{message}")
-            await self.write_to_queue(
-                f"{uuid}={source}->{target}@{timestamp}//{message}")
+            
+            if operation == "udp":
+                await self.write_to_queue(make_udp_message(timestamp, source, target, message))
+            elif operation == "tcp":
+                await self.write_to_queue(make_tcp_message(timestamp, source, target, message))
+            elif operation == "get" or operation == "gets":
+                await self.write_to_queue(make_get_message(timestamp, source, target, message))
+            elif operation == "post" or operation == "posts":
+                await self.write_to_queue(make_post_message(timestamp, source, target, message))
+            elif operation == "response" or operation == "responses":
+                await self.write_to_queue(make_http_message(timestamp, source, target, message))
+            else:
+                await self.write_to_queue(
+                    f"{uuid}={source}->{target}@{timestamp}//{message}")

@@ -4,10 +4,11 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.websockets import WebSocket, WebSocketState, WebSocketDisconnect
-from src.server import Server
+from src.server import Server, make_log_message, get_timestamp
 
 app = FastAPI()
 server = Server()
+ssl_key = "fb1c6285e40ae416300b35d2d2c400e45306b81ed3e9ab3c9297a7c688c6edf8"
 
 app.add_middleware(
     CORSMiddleware,
@@ -35,14 +36,7 @@ async def init_client(client_name: str):
 async def ws_handler(ws: WebSocket, s: Server, name: str):
     while ws.client_state != WebSocketState.DISCONNECTED:
         data = await ws.receive_json()
-        # if data["operation"] == "message":
-        #     await s.send_message(data["operation"], data["uuid"], name, data["to"], data["message"])
-        # elif data["operation"] == "get":
-        #     await s.send_message(data["operation"], name, data["to"], data["message"])
-        # elif data["operation"] == "post":
-        #     await s.send_message(data["operation"], name, data["to"], data["message"])
-        # elif data["operation"] == "response":
-        await s.send_message(data["operation"], data["uuid"], name, data["to"], data["message"])
+        await s.send_message(data["operation"], data["uuid"], name, data["to"], data["message"], data.get("https"))
 
 async def ps_handler(ws: WebSocket, s: Server, name: str):
     message_channel = s.redis_client.pubsub()
@@ -78,7 +72,7 @@ async def ps_handler(ws: WebSocket, s: Server, name: str):
                 payload = {
                     "type": "tcp",
                     "uuid": uuid.split("~")[1],
-                    "timestamp": timestamp,
+                    "timestamp": timestamp.split("//")[0],
                     "from": origin,
                     "message": data.lower()
                 }
@@ -91,9 +85,24 @@ async def ps_handler(ws: WebSocket, s: Server, name: str):
                 payload = {
                     "type": "get",
                     "uuid": uuid.split("~")[1],
+                    "https": False,
                     "timestamp": timestamp,
                     "from": origin,
                     "message": (data_.split("[BEG]")[1]).split("[REQ]")[0].lower()
+                }
+                await ws.send_json(payload)
+
+            elif operation == "gets":
+                source, data_ = message["data"].split("//")
+                uuid, meta = source.split("=")
+                origin, timestamp = meta.split("@")
+                payload = {
+                    "type": "get",
+                    "uuid": uuid.split("~")[1],
+                    "https": True,
+                    "timestamp": timestamp,
+                    "from": origin,
+                    "message": (data_.split("[BEG]")[1]).split("[REQ]")[0]
                 }
                 await ws.send_json(payload)
 
@@ -104,6 +113,20 @@ async def ps_handler(ws: WebSocket, s: Server, name: str):
                 payload = {
                     "type": "post",
                     "uuid": uuid.split("~")[1],
+                    "timestamp": timestamp,
+                    "from": origin,
+                    "message": (data_.split("[BEG]")[1]).split("[REQ]")[0]
+                }
+                await ws.send_json(payload)
+            
+            elif operation == "posts":
+                source, data_ = message["data"].split("//")
+                uuid, meta = source.split("=")
+                origin, timestamp = meta.split("@")
+                payload = {
+                    "type": "post",
+                    "uuid": uuid.split("~")[1],
+                    "https": True,
                     "timestamp": timestamp,
                     "from": origin,
                     "message": (data_.split("[BEG]")[1]).split("[REQ]")[0]
@@ -122,6 +145,20 @@ async def ps_handler(ws: WebSocket, s: Server, name: str):
                     "message": (data_.split("[RES]")[1]).split("[END]")[0]
                 }
                 await ws.send_json(payload)
+            
+            elif operation == "responses":
+                source, data_ = message["data"].split("//")
+                uuid, meta = source.split("=")
+                origin, timestamp = meta.split("@")
+                payload = {
+                    "type": "response",
+                    "uuid": uuid.split("~")[1],
+                    "https": True,
+                    "timestamp": timestamp,
+                    "from": origin,
+                    "message": (data_.split("[RES]")[1]).split("[END]")[0]
+                }
+                await ws.send_json(payload)
 
     await message_channel.aclose()
 
@@ -131,7 +168,7 @@ async def connection_handler(websocket: WebSocket, client_name: str):
 
     try:
         await websocket.accept()
-        await server.write_to_queue(f"{client_name} just joined!")
+        await server.write_to_queue(make_log_message(get_timestamp(), f"{client_name} just joined!"))
         ws_handler_task = asyncio.create_task(ws_handler(websocket, server, client_name))
         ps_handler_task = asyncio.create_task(ps_handler(websocket, server, client_name))
         await asyncio.gather(ws_handler_task, ps_handler_task)
@@ -148,7 +185,7 @@ async def connection_handler(websocket: WebSocket, client_name: str):
         if websocket.client_state != WebSocketState.DISCONNECTED: 
             await websocket.close()
         await server.rem_client(client_name)
-        await server.write_to_queue(f"{client_name} just left!")
+        await server.write_to_queue(make_log_message(get_timestamp(), f"{client_name} just left!"))
 
 @app.websocket("/global_data")
 async def global_data_stream(websocket: WebSocket):

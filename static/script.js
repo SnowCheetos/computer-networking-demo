@@ -18,6 +18,18 @@ let http_requests = {};
 let curr_http_origin = null;
 let curr_message_id = null;
 let curr_response_btn_id = null;
+let client_name_color = {};
+let use_https = false;
+let resp_https = {};
+let ssl_key = "fb1c6285e40ae416300b35d2d2c400e45306b81ed3e9ab3c9297a7c688c6edf8";
+
+function generateRandomColor() {
+    var color = '#';
+    for (var i = 0; i < 6; i++) {
+        color += Math.floor(Math.random() * 10);
+    }
+    return color;
+}
 
 function trimListToMaxSize(ulId, maxSize) {
     // Select the unordered list by its ID
@@ -36,12 +48,29 @@ function trimListToMaxSize(ulId, maxSize) {
     }
 }
 
+function encrypt(message, secretKey) {
+    return CryptoJS.AES.encrypt(message, secretKey).toString();
+}
+
+function decrypt(ciphertext, secretKey) {
+    var bytes  = CryptoJS.AES.decrypt(ciphertext, secretKey);
+    return bytes.toString(CryptoJS.enc.Utf8);
+}
+
 function cachePrivateMessages() {
     sessionStorage.setItem('messages', document.getElementById('private-messages').innerHTML);
 }
 
+function cacheColorMap() {
+    sessionStorage.setItem('color-map', JSON.stringify(client_name_color));
+}
+
 function loadCachedMessages() {
     document.getElementById('private-messages').innerHTML = sessionStorage.getItem('messages');
+}
+
+function loadColorMap() {
+    client_name_color = JSON.parse(sessionStorage.getItem('color-map'));
 }
 
 if (sessionStorage.getItem('name') !== null) {
@@ -52,11 +81,19 @@ if (sessionStorage.getItem('name') !== null) {
 respond_button.addEventListener('click', (event) => {
     event.stopPropagation();
     event.preventDefault();
-    const message = response_holder.querySelector('.http-response-body').value;
+    var data = response_holder.querySelector('.http-response-body').value;
+    let message = '';
+    const curr_resp_https = resp_https[curr_message_id];
+    if (resp_https[curr_message_id]) {
+        message = encrypt(data, ssl_key);
+    } else {
+        message = data;
+    }
     if (curr_message_id) {
         client_ws.send(JSON.stringify({
             operation: 'response',
             uuid: curr_message_id,
+            https: curr_resp_https,
             to: curr_http_origin,
             message: `[RES]${message}[END]`
         }));
@@ -72,13 +109,21 @@ respond_button.addEventListener('click', (event) => {
 });
 
 function initClient(name) {
+    if (sessionStorage.getItem('color-map') !== null) {
+        loadColorMap();
+    }
+
+    if (!client_name_color[name]) {
+        client_name_color[name] = generateRandomColor();
+        cacheColorMap();
+    }
     fetch(`${window.location.protocol}//${window.location.host}/client/init/${name}`)        
     .then(response => {
         if (response.status == 200) {
             initClientWebSocket(name);
             initGlobalWebSocket();
         } else if (response.status === 400) {
-            document.getElementById('duplicated-name').style.display = 'block';
+            document.getElementById('duplicated-name').style.display = 'flex';
         }
     })
     .catch(error => console.error('Error fetching device data:', error));
@@ -91,16 +136,20 @@ function initClientWebSocket(name) {
     client_ws = new WebSocket(`${ws_protocol}//${window.location.host}/connect/${name}`);
     client_ws.onmessage = function(event) {
         const data = JSON.parse(event.data);
+        if (!client_name_color[data.from]) {
+            client_name_color[data.from] = generateRandomColor();
+            cacheColorMap();
+        }
         if (data.type === 'udp') {
-            addUDPMessage(data.from, data.message);
+            addUDPMessage(data.timestamp, data.from, data.message);
         } else if (data.type === 'tcp') {
-            addTCPMessage(data.uuid, data.from, data.message);
+            addTCPMessage(data.timestamp, data.uuid, data.from, data.message);
         } else if (data.type === 'get') {
-            addGETMessage(data.uuid, data.from, data.message);
+            addGETMessage(data.timestamp, data.uuid, data.from, data.message, data.https);
         } else if (data.type === 'post') {
-            addPOSTMessage(data.uuid, data.from, data.message);
+            addPOSTMessage(data.timestamp, data.uuid, data.from, data.message, data.https);
         } else if (data.type === 'response') {
-            addRESMessage(data.uuid, data.from, data.message);
+            addRESMessage(data.timestamp, data.uuid, data.from, data.message, data.https);
         };
         trimListToMaxSize('private-messages', max_messages);
         cachePrivateMessages();
@@ -109,17 +158,23 @@ function initClientWebSocket(name) {
     document.getElementById('main-page').style.display = 'flex';
 };
 
-function addRESMessage(message_id, origin, data) {
+function addRESMessage(timestamp, message_id, origin, data, https) {
     const messages = document.getElementById('private-messages');
     const listItem = document.createElement('li');
     const request_body = http_requests[message_id];
-    console.log(message_id);
-    console.log(http_requests);
+
+    let message = '';
+    if (https) {
+        message = decrypt(data, ssl_key);
+    } else {
+        message = data;
+    }
 
     listItem.innerHTML = `
     <div class="http-message-class">
         <div class="http-metadata-tag">
             <div class="http-tag">HTTP</div>
+            <div class="timestamp-class">${timestamp}</div>
             <div class="http-origin">${origin}:</div>
         </div>
         <div class="http-message-content">
@@ -127,39 +182,50 @@ function addRESMessage(message_id, origin, data) {
                 Q: ${request_body}
             </div>
             <div>
-                A: ${data}
+                A: ${message}
             </div>
         </div>
     </div>`;
+    listItem.querySelector('.http-origin').style.color = client_name_color[origin];
     messages.appendChild(listItem);
 }
 
-function addUDPMessage(origin, data) {
+function addUDPMessage(timestamp, origin, data) {
     const messages = document.getElementById('private-messages');
     const listItem = document.createElement('li');
     listItem.innerHTML = `
     <div class="udp-message-class">
         <div class="udp-metadata-tag">
             <div class="udp-tag">UDP</div>
+            <div class="timestamp-class">${timestamp}</div>
             <div class="udp-origin">${origin}:</div>
         </div>
         <div class="udp-message-content">${data}</div>
     </div>`;
+    listItem.querySelector('.udp-origin').style.color = client_name_color[origin];
     messages.appendChild(listItem);
 };
 
-function addGETMessage(message_id, origin, data) {
+function addGETMessage(timestamp, message_id, origin, data, https) {
     const messages = document.getElementById('private-messages');
     const listItem = document.createElement('li');
+    let message = '';
+    if (https) {
+        message = decrypt(data, ssl_key);
+        resp_https[message_id] = true;
+    } else {
+        message = data;
+    }
     listItem.id = message_id;
     listItem.innerHTML = `
     <div class="get-message-class">
         <div class="get-metadata-tag">
             <div class="get-tag">GET</div>
+            <div class="timestamp-class">${timestamp}</div>
             <div class="get-origin">${origin}:</div>
         </div>
         <div class="http-message-content">
-            <div id="${message_id}:message-content">What is your ${data}?</div>
+            <div id="${message_id}:message-content">What is your ${message}?</div>
             <div class="http-response-button" id="${message_id}:response-button">Respond</div>
         </div>
     </div>`;
@@ -172,21 +238,30 @@ function addGETMessage(message_id, origin, data) {
         curr_message_id = message_id;
         response_holder.style.display = 'flex';
     });
+    listItem.querySelector('.get-origin').style.color = client_name_color[origin];
     messages.appendChild(listItem);
 };
 
-function addPOSTMessage(message_id, origin, data) {
+function addPOSTMessage(timestamp, message_id, origin, data, https) {
     const messages = document.getElementById('private-messages');
     const listItem = document.createElement('li');
+    let message = '';
+    if (https) {
+        message = decrypt(data, ssl_key);
+        resp_https[message_id] = true;
+    } else {
+        message = data;
+    }
     listItem.id = message_id;
     listItem.innerHTML = `
     <div class="post-message-class">
         <div class="post-metadata-tag">
             <div class="post-tag">POST</div>
+            <div class="timestamp-class">${timestamp}</div>
             <div class="post-origin">${origin}:</div>
         </div>
         <div class="http-message-content">
-            <div id="${message_id}:message-content">${data}?</div>
+            <div id="${message_id}:message-content">${message}?</div>
             <div class="http-response-button" id="${message_id}:response-button">Respond</div>
         </div>
     </div>`;
@@ -199,10 +274,11 @@ function addPOSTMessage(message_id, origin, data) {
         curr_message_id = message_id;
         response_holder.style.display = 'flex';
     });
+    listItem.querySelector('.post-origin').style.color = client_name_color[origin];
     messages.appendChild(listItem);
 };
 
-function addTCPMessage(message_id, origin, data) {
+function addTCPMessage(timestamp, message_id, origin, data) {
     const messages = document.getElementById('private-messages');
     let found = false;
     Array.from(messages.children).forEach(child => {
@@ -224,10 +300,12 @@ function addTCPMessage(message_id, origin, data) {
         <div class="tcp-message-class">
             <div class="tcp-metadata-tag">
                 <div class="tcp-tag">TCP</div>
+                <div class="timestamp-class">${timestamp}</div>
                 <div class="tcp-origin">${origin}:</div>
             </div>  
             <div class="tcp-message-content">${data}</div>
         </div>`;
+        listItem.querySelector('.tcp-origin').style.color = client_name_color[origin];
         messages.appendChild(listItem);
     };
 };
@@ -266,6 +344,7 @@ function populateClients(container, data) {
                 <div class="udp-button">UDP</div>
                 <div class="tcp-button">TCP</div>
                 <div class="http-button">HTTP</div>
+                <div class="https-button">HTTPS</div>
             </div>`;
 
             const udp_button = listItem.querySelector('.udp-button');
@@ -295,8 +374,25 @@ function populateClients(container, data) {
                 document.getElementById('http-post-destination').textContent = item;
                 http_request_holder.style.display = 'flex';
                 http_destination = item;
-            })
+            });
+            
+            const https_button = listItem.querySelector('.https-button');
+            https_button.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                use_https = true;
+                const http_request_holder = document.getElementById('http-request-holder');
+                document.getElementById('http-get-destination').textContent = `${item}'s`;
+                document.getElementById('http-post-destination').textContent = item;
+                http_request_holder.style.display = 'flex';
+                http_destination = item;
+            });
 
+            if (!client_name_color[item]) {
+                client_name_color[item] = generateRandomColor();
+                cacheColorMap();
+            }
+            listItem.querySelector('.client-name-tag').style.color = client_name_color[item];
             container.appendChild(listItem);
         }
     });
@@ -311,14 +407,15 @@ function populateLogs(container, data) {
     });
 };
 
-document.getElementById('connect-button').addEventListener('click', function(event){
+document.getElementById('connect-button').addEventListener('pointerdown', function(event){
     event.preventDefault();
+    event.stopPropagation();
     client_name = document.getElementById('client-name').value;
     sessionStorage.setItem('name', client_name);
     initClient(client_name);
 });
 
-document.getElementById('udp-send-button').addEventListener('click', function(event){
+document.getElementById('udp-send-button').addEventListener('click', function(event) {
     event.stopPropagation();
     event.preventDefault();
     if (udp_destination !== null) {
@@ -408,25 +505,40 @@ document.getElementById('http-send-button').addEventListener('click', function(e
     if (http_destination !== null) {
         if (http_method === 'GET') {
             const get_option = document.getElementById('http-get-options').value;
+            let message = '';
+            if (use_https) {
+                message = encrypt(get_option, ssl_key);
+            } else {
+                message = get_option;
+            }
             client_ws.send(JSON.stringify({
                 operation: 'get',
+                https: use_https,
                 uuid: http_request_uuid,
                 to: http_destination,
-                message: `[BEG]${get_option}[REQ]`}));
+                message: `[BEG]${message}[REQ]`}));
             http_requests[http_request_uuid] = `What is your ${get_option}?`;
 
         } else if (http_method === 'POST') {
             const post_body = document.getElementById('http-post-body').value;
+            let message = '';
+            if (use_https) {
+                message = encrypt(post_body, ssl_key);
+            } else {
+                message = get_option;
+            }
             if (post_body.length > 0) {
                 client_ws.send(JSON.stringify({
                     operation: 'post',
+                    https: use_https,
                     uuid: http_request_uuid,
                     to: http_destination,
-                    message: `[BEG]${post_body}[REQ]`}))};
+                    message: `[BEG]${message}[REQ]`}))};
             http_requests[http_request_uuid] = post_body + '?';
             document.getElementById('http-post-body').value = '';
         }
     }
+    use_https = false;
     http_destination = null;
     http_request_uuid = null;
     document.getElementById('http-get-destination').textContent = '';

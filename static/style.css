@@ -97,6 +97,7 @@ html, body {
 .udp-message-class, 
 .tcp-message-class,
 .get-message-class,
+.post-message-class,
 .http-message-class {
     display: flex;
     flex-direction: column;
@@ -108,6 +109,7 @@ html, body {
 .udp-metadata-tag, 
 .tcp-metadata-tag,
 .get-metadata-tag,
+.post-metadata-tag,
 .http-metadata-tag {
     display: flex;
     flex-direction: row;
@@ -145,6 +147,7 @@ html, body {
 .udp-origin, 
 .tcp-origin,
 .get-origin,
+.post-origin,
 .http-origin {
     font-weight: bold;
 }
@@ -165,6 +168,12 @@ html, body {
     padding: 2px;
     border-radius: 2px;
     background: rgb(205, 255, 176);
+}
+
+.post-tag {
+    padding: 2px;
+    border-radius: 2px;
+    background: rgb(255, 135, 135);
 }
 
 .http-tag {

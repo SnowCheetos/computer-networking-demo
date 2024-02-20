@@ -80,7 +80,7 @@ async def ps_handler(ws: WebSocket, s: Server, name: str):
                     "uuid": uuid.split("~")[1],
                     "timestamp": timestamp,
                     "from": origin,
-                    "message": data
+                    "message": data.lower()
                 }
                 await ws.send_json(payload)
 
@@ -97,6 +97,19 @@ async def ps_handler(ws: WebSocket, s: Server, name: str):
                 }
                 await ws.send_json(payload)
 
+            elif operation == "post":
+                source, data_ = message["data"].split("//")
+                uuid, meta = source.split("=")
+                origin, timestamp = meta.split("@")
+                payload = {
+                    "type": "post",
+                    "uuid": uuid.split("~")[1],
+                    "timestamp": timestamp,
+                    "from": origin,
+                    "message": (data_.split("[BEG]")[1]).split("[REQ]")[0]
+                }
+                await ws.send_json(payload)
+
             elif operation == "response":
                 source, data_ = message["data"].split("//")
                 uuid, meta = source.split("=")
@@ -106,7 +119,7 @@ async def ps_handler(ws: WebSocket, s: Server, name: str):
                     "uuid": uuid.split("~")[1],
                     "timestamp": timestamp,
                     "from": origin,
-                    "message": (data_.split("[RES]")[1]).split("[END]")[0].lower()
+                    "message": (data_.split("[RES]")[1]).split("[END]")[0]
                 }
                 await ws.send_json(payload)
 

@@ -11,11 +11,38 @@ let tcp_uuid = crypto.randomUUID();
 let http_method = 'GET';
 let http_request_uuid = null;
 let http_response_uuid = null;
+let http_requests = {};
+let curr_http_origin = null;
+let curr_message_id = null;
+let curr_response_btn_id = null;
+const response_holder = document.getElementById('http-response-holder');
+const respond_button = response_holder.querySelector('.http-response-send-button');
 
 if (sessionStorage.getItem('name') !== null) {
     client_name = sessionStorage.getItem('name');
     initClient(client_name);
 };
+
+respond_button.addEventListener('click', (event) => {
+    event.stopPropagation();
+    event.preventDefault();
+    const message = response_holder.querySelector('.http-response-body').value;
+    if (curr_message_id) {
+        client_ws.send(JSON.stringify({
+            operation: 'response',
+            uuid: curr_message_id,
+            to: curr_http_origin,
+            message: `[RES]${message}[END]`
+        }));
+        response_holder.style.display = 'none';
+        document.getElementById(curr_response_btn_id).style.display = 'none';
+        document.getElementById(`${curr_message_id}:message-content`).textContent += ' ✅';
+        curr_message_id = null;
+        curr_http_origin = null;
+        curr_response_btn_id = null
+        response_holder.querySelector('.http-response-body').value = '';
+    }
+});
 
 function initClient(name) {
     fetch(`${window.location.protocol}//${window.location.host}/client/init/${name}`)        
@@ -42,6 +69,8 @@ function initClientWebSocket(name) {
             addTCPMessage(data.uuid, data.from, data.message);
         } else if (data.type === 'get') {
             addGETMessage(data.uuid, data.from, data.message);
+        } else if (data.type === 'post') {
+            addPOSTMessage(data.uuid, data.from, data.message);
         } else if (data.type === 'response') {
             addRESMessage(data.uuid, data.from, data.message);
         };
@@ -53,13 +82,24 @@ function initClientWebSocket(name) {
 function addRESMessage(message_id, origin, data) {
     const messages = document.getElementById('private-messages');
     const listItem = document.createElement('li');
+    const request_body = http_requests[message_id];
+    console.log(message_id);
+    console.log(http_requests);
+
     listItem.innerHTML = `
     <div class="http-message-class">
         <div class="http-metadata-tag">
             <div class="http-tag">HTTP</div>
             <div class="http-origin">${origin}:</div>
         </div>
-        <div class="http-message-content">${data}</div>
+        <div class="http-message-content">
+            <div>
+                Q: ${request_body}
+            </div>
+            <div>
+                A: ${data}
+            </div>
+        </div>
     </div>`;
     messages.appendChild(listItem);
 }
@@ -89,30 +129,45 @@ function addGETMessage(message_id, origin, data) {
             <div class="get-origin">${origin}:</div>
         </div>
         <div class="http-message-content">
-            <div>What is your ${data}?</div>
-            <div class="http-response-button">Respond</div>
+            <div id="${message_id}:message-content">What is your ${data}?</div>
+            <div class="http-response-button" id="${message_id}:response-button">Respond</div>
         </div>
     </div>`;
     const response_button = listItem.querySelector('.http-response-button');
     response_button.addEventListener('click', (event) => {
         event.stopPropagation();
         event.preventDefault();
-        const response_holder = document.getElementById('http-response-holder');
+        curr_response_btn_id = `${message_id}:response-button`;
+        curr_http_origin = origin;
+        curr_message_id = message_id;
         response_holder.style.display = 'flex';
-        const respond_button = response_holder.querySelector('.http-response-send-button');
-        respond_button.addEventListener('click', (event) => {
-            event.stopPropagation();
-            event.preventDefault();
-            const message = response_holder.querySelector('.http-response-body').value;
-            client_ws.send(JSON.stringify({
-                operation: 'response',
-                uuid: message_id,
-                to: origin,
-                message: `[RES]My ${data} is ${message}[END]`
-            }));
-            response_button.style.display = 'none';
-            response_holder.style.display = 'none';
-        });
+    });
+    messages.appendChild(listItem);
+};
+
+function addPOSTMessage(message_id, origin, data) {
+    const messages = document.getElementById('private-messages');
+    const listItem = document.createElement('li');
+    listItem.id = message_id;
+    listItem.innerHTML = `
+    <div class="post-message-class">
+        <div class="post-metadata-tag">
+            <div class="post-tag">POST</div>
+            <div class="post-origin">${origin}:</div>
+        </div>
+        <div class="http-message-content">
+            <div id="${message_id}:message-content">${data}?</div>
+            <div class="http-response-button" id="${message_id}:response-button">Respond</div>
+        </div>
+    </div>`;
+    const response_button = listItem.querySelector('.http-response-button');
+    response_button.addEventListener('click', (event) => {
+        event.stopPropagation();
+        event.preventDefault();
+        curr_response_btn_id = `${message_id}:response-button`;
+        curr_http_origin = origin;
+        curr_message_id = message_id;
+        response_holder.style.display = 'flex';
     });
     messages.appendChild(listItem);
 };
@@ -123,7 +178,6 @@ function addTCPMessage(message_id, origin, data) {
     Array.from(messages.children).forEach(child => {
         if (child.id === message_id) {
             found = true;
-            console.log(message_id);
             let dataContainer = child.querySelector('.tcp-message-content');
             if (!dataContainer) {
                 dataContainer = document.createElement('div');
@@ -329,6 +383,7 @@ document.getElementById('http-send-button').addEventListener('click', function(e
                 uuid: http_request_uuid,
                 to: http_destination,
                 message: `[BEG]${get_option}[REQ]`}));
+            http_requests[http_request_uuid] = `What is your ${get_option}?`;
 
         } else if (http_method === 'POST') {
             const post_body = document.getElementById('http-post-body').value;
@@ -338,6 +393,8 @@ document.getElementById('http-send-button').addEventListener('click', function(e
                     uuid: http_request_uuid,
                     to: http_destination,
                     message: `[BEG]${post_body}[REQ]`}))};
+            http_requests[http_request_uuid] = post_body + '?';
+            document.getElementById('http-post-body').value = '';
         }
     }
     http_destination = null;

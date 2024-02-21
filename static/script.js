@@ -10,7 +10,7 @@ let udp_destination = null;
 let tcp_destination = null;
 let http_destination = null;
 let tcp_message = '[BEG]';
-let tcp_uuid = crypto.randomUUID();
+let tcp_uuid = window.location.protocol === 'https:' ? crypto.randomUUID() : uuidv4();
 let http_method = 'GET';
 let http_request_uuid = null;
 let http_response_uuid = null;
@@ -22,6 +22,13 @@ let client_name_color = {};
 let use_https = false;
 let resp_https = {};
 let ssl_key = "fb1c6285e40ae416300b35d2d2c400e45306b81ed3e9ab3c9297a7c688c6edf8";
+
+function uuidv4() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
 
 function generateRandomColor() {
     var color = '#';
@@ -117,6 +124,7 @@ function initClient(name) {
         client_name_color[name] = generateRandomColor();
         cacheColorMap();
     }
+    console.log(`${window.location.protocol}//${window.location.host}/client/init/${name}`);
     fetch(`${window.location.protocol}//${window.location.host}/client/init/${name}`)        
     .then(response => {
         if (response.status == 200) {
@@ -408,7 +416,7 @@ function populateLogs(container, data) {
     });
 };
 
-document.getElementById('connect-button').addEventListener('pointerdown', function(event){
+document.getElementById('connect-button').addEventListener('click', function(event){
     event.preventDefault();
     event.stopPropagation();
     client_name = document.getElementById('client-name').value;
@@ -424,7 +432,7 @@ document.getElementById('udp-send-button').addEventListener('click', function(ev
         if (message.length > 0) {
             client_ws.send(JSON.stringify({
                 operation: 'udp',
-                uuid: crypto.randomUUID(),
+                uuid: window.location.protocol === 'https:' ? crypto.randomUUID() : uuidv4(),
                 to: udp_destination,
                 message: `[BEG]${message}[END]`}))};
         udp_destination = null;
@@ -470,7 +478,7 @@ document.getElementById('tcp-done-button').addEventListener('click', function(ev
     }
     tcp_packet_size = 6;
     tcp_message = '[BEG]'; // Reset the message buffer to its initial state
-    tcp_uuid = crypto.randomUUID();
+    tcp_uuid = window.location.protocol === 'https:' ? crypto.randomUUID() : uuidv4();;
     document.getElementById('tcp-message').value = '';
     document.getElementById('tcp-message-holder').style.display = 'none'; // Hide the message holder
 });
@@ -502,7 +510,7 @@ document.getElementById('http-method').addEventListener('change', function() {
 document.getElementById('http-send-button').addEventListener('click', function(event) {
     event.stopPropagation();
     event.preventDefault();
-    http_request_uuid = crypto.randomUUID();
+    http_request_uuid = window.location.protocol === 'https:' ? crypto.randomUUID() : uuidv4();
     if (http_destination !== null) {
         if (http_method === 'GET') {
             const get_option = document.getElementById('http-get-options').value;
@@ -526,7 +534,7 @@ document.getElementById('http-send-button').addEventListener('click', function(e
             if (use_https) {
                 message = encrypt(post_body, ssl_key);
             } else {
-                message = get_option;
+                message = post_body;
             }
             if (post_body.length > 0) {
                 client_ws.send(JSON.stringify({

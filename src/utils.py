@@ -25,7 +25,7 @@ def make_log_message(timestamp: str, message: str) -> str:
         <div class="global-message-meta">
             <div class="timestamp-class">{timestamp}</div>
             <div class="log-tag">LOG</div>
-            <div>{message}</div>
+            <div class="log-message">{message}</div>
         </div>
     </div>
     """

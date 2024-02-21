@@ -168,7 +168,9 @@ async def connection_handler(websocket: WebSocket, client_name: str):
 
     try:
         await websocket.accept()
-        await server.write_to_queue(make_log_message(get_timestamp(), f"{client_name} just joined!"))
+        await server.write_to_queue(make_log_message(
+            get_timestamp(), 
+            f'<div class="name-tag">{client_name}</div><div>just joined!</div>'))
         ws_handler_task = asyncio.create_task(ws_handler(websocket, server, client_name))
         ps_handler_task = asyncio.create_task(ps_handler(websocket, server, client_name))
         await asyncio.gather(ws_handler_task, ps_handler_task)
@@ -185,7 +187,9 @@ async def connection_handler(websocket: WebSocket, client_name: str):
         if websocket.client_state != WebSocketState.DISCONNECTED: 
             await websocket.close()
         await server.rem_client(client_name)
-        await server.write_to_queue(make_log_message(get_timestamp(), f"{client_name} just left!"))
+        await server.write_to_queue(make_log_message(
+            get_timestamp(), 
+            f'<div class="name-tag">{client_name}</div><div>just left!</div>'))
 
 @app.websocket("/global_data")
 async def global_data_stream(websocket: WebSocket):

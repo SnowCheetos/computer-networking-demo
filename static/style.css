@@ -138,6 +138,8 @@ html, body {
     background-color: #f3f3f3;
     border-radius: 3px;
     margin-bottom: 5px;
+    word-wrap:break-word;
+    max-width: 90%;
 }
 
 .udp-message-content::after,
@@ -213,6 +215,7 @@ html, body {
 
 .http-message-content {
     align-items: center;
+    word-wrap:break-word;
 }
 
 .http-response-button {
@@ -257,6 +260,12 @@ html, body {
     flex-grow: 30;
 }
 
+.log-message {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+}
+
 .global-message-meta {
     display: flex;
     flex-direction: row;
@@ -274,6 +283,8 @@ html, body {
     margin-bottom: 5px;
     align-items: center;
     width: max-content;
+    max-width: 90%;
+    word-wrap: break-word;
 }
 
 .global-message-class {
@@ -338,7 +349,8 @@ html, body {
 .udp-button,
 .tcp-button,
 .http-button,
-.https-button
+.https-button,
+.websocket-button
 {
     padding: 2px;
     margin-right: 10px;
@@ -360,13 +372,18 @@ html, body {
 }
 
 .https-button {
+    background-color: rgb(241, 130, 249);
+}
+
+.websocket-button {
     background-color: rgb(249, 211, 130);
 }
 
 .udp-button:hover,
 .tcp-button:hover,
 .http-button:hover,
-.https-button:hover
+.https-button:hover,
+.websocket-button:hover
 {
     cursor: pointer;
     box-shadow: 1px 1px 1px #373737;

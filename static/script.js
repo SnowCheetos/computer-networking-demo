@@ -345,6 +345,7 @@ function populateClients(container, data) {
                 <div class="tcp-button">TCP</div>
                 <div class="http-button">HTTP</div>
                 <div class="https-button">HTTPS</div>
+                <div class="websocket-button">WebSocket</div>
             </div>`;
 
             const udp_button = listItem.querySelector('.udp-button');

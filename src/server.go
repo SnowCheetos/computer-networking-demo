@@ -1,122 +1,140 @@
 package src
 
 import (
+	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
 )
 
-type Client struct {
-	conn *websocket.Conn
-	send chan []byte // Channel for sending messages
-}
-
 type Server struct {
-	clients    map[*Client]bool // Registered clients
-	register   chan *Client     // Register requests from the clients
-	unregister chan *Client     // Unregister requests from clients
-	broadcast  chan []byte      // Broadcast messages to clients
-	mutex      sync.RWMutex
+	clients map[string]*Client
+	logs    []string
+	mutex   sync.RWMutex
 }
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
-		return true // Adjust the origin check for your requirements
+		return true
 	},
 }
 
 func NewServer() *Server {
 	return &Server{
-		clients:    make(map[*Client]bool),
-		register:   make(chan *Client),
-		unregister: make(chan *Client),
-		broadcast:  make(chan []byte),
+		clients: make(map[string]*Client),
 	}
 }
 
-func (s *Server) InitClientHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	clientName := vars["client_name"]
-
+func (s *Server) addClient(clientName string, conn *websocket.Conn) *Client {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	// Check if the client name is already registered
-	if _, exists := s.clients[clientName]; exists {
-		http.Error(w, "Client name already registered", http.StatusBadRequest)
-		return
-	}
-
-	// Register the new client
-	s.clients[clientName] = true
-	w.WriteHeader(http.StatusOK)
+	s.writeToLogs(fmt.Sprintf(clientName, " Just Joined!"))
+	client := Client{name: clientName, conn: conn, send: make(chan Message)}
+	s.clients[clientName] = &client
+	return &client
 }
 
-func (s *Server) run() {
-	for {
-		select {
-		case client := <-s.register:
-			s.clients[client] = true
-		case client := <-s.unregister:
-			if _, ok := s.clients[client]; ok {
-				delete(s.clients, client)
-				close(client.send)
-			}
-		case message := <-s.broadcast:
-			for client := range s.clients {
-				select {
-				case client.send <- message:
-				default:
-					close(client.send)
-					delete(s.clients, client)
-				}
-			}
-		}
+func (s *Server) delClient(clientName string) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	if client, exists := s.clients[clientName]; exists {
+		close(client.send)
+		delete(s.clients, clientName)
 	}
 }
 
-func (s *Server) handleConnection(w http.ResponseWriter, r *http.Request) {
+func (s *Server) getClient(clientName string) (*Client, bool) {
+	if client, exists := s.clients[clientName]; exists {
+		return client, true
+	}
+	return nil, false
+}
+
+func (s *Server) InitClient(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	clientName := vars["client_name"]
+
+	if _, exists := s.getClient(clientName); exists {
+		http.Error(w, "Client already exists", http.StatusBadRequest)
+	}
+}
+
+func (s *Server) writeToLogs(m string) {
+	s.logs = append(s.logs, m)
+}
+
+func (s *Server) getGlobalLogs(n int) []string {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	totalMessages := len(s.logs)
+
+	startIndex := totalMessages - n
+	if startIndex < 0 {
+		startIndex = 0
+	}
+
+	return s.logs[startIndex:]
+}
+
+func (s *Server) getClientList() []string {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
+	keys := make([]string, 0, len(s.clients))
+
+	// Iterate over the map and append each key to the slice
+	for key := range s.clients {
+		keys = append(keys, key)
+	}
+	return keys
+}
+
+func (s *Server) HandleConnection(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	clientName := vars["client_name"]
+
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		fmt.Println("Error upgrading to WebSocket:", err)
 		return
 	}
-	client := &Client{conn: conn, send: make(chan []byte, 256)}
-	s.register <- client
+	client := s.addClient(clientName, conn)
 
 	go client.writePump()
 	go client.readPump(s)
 }
 
-func (c *Client) readPump(s *Server) {
-	defer func() {
-		s.unregister <- c
-		c.conn.Close()
-	}()
+func (s *Server) GlobalDataStream(w http.ResponseWriter, r *http.Request) {
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		fmt.Println("Error upgrading to WebSocket:", err)
+		return
+	}
+
+	defer conn.Close()
+
 	for {
-		_, message, err := c.conn.ReadMessage()
+		message := GlobalData{
+			Clients: s.getClientList(),
+			Logs:    s.getGlobalLogs(50),
+		}
+
+		data, err := json.Marshal(message)
 		if err != nil {
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				fmt.Printf("Error: %v", err)
-			}
+			log.Println("Error parsing JSON")
 			break
 		}
-		s.broadcast <- message
-	}
-}
 
-func (c *Client) writePump() {
-	for {
-		select {
-		case message, ok := <-c.send:
-			if !ok {
-				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
-				return
-			}
-			c.conn.WriteMessage(websocket.TextMessage, message)
-		}
+		conn.WriteMessage(websocket.TextMessage, data)
+
+		time.Sleep(1 * time.Second)
 	}
 }

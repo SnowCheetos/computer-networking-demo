@@ -51,7 +51,7 @@ async def ps_handler(ws: WebSocket, s: Server, name: str):
                 uuid, meta = source.split("=")
                 origin, timestamp = meta.split("@")
                 payload = {
-                    "type": "udp",
+                    "operation": "udp",
                     "uuid": uuid.split("~")[1],
                     "timestamp": timestamp,
                     "from": origin,
@@ -70,7 +70,7 @@ async def ps_handler(ws: WebSocket, s: Server, name: str):
                     uuid, meta = source.split("=")
                     origin, timestamp = meta.split("@")
                 payload = {
-                    "type": "tcp",
+                    "operation": "tcp",
                     "uuid": uuid.split("~")[1],
                     "timestamp": timestamp.split("//")[0],
                     "from": origin,
@@ -83,7 +83,7 @@ async def ps_handler(ws: WebSocket, s: Server, name: str):
                 uuid, meta = source.split("=")
                 origin, timestamp = meta.split("@")
                 payload = {
-                    "type": "get",
+                    "operation": "get",
                     "uuid": uuid.split("~")[1],
                     "https": False,
                     "timestamp": timestamp,
@@ -97,7 +97,7 @@ async def ps_handler(ws: WebSocket, s: Server, name: str):
                 uuid, meta = source.split("=")
                 origin, timestamp = meta.split("@")
                 payload = {
-                    "type": "get",
+                    "operation": "get",
                     "uuid": uuid.split("~")[1],
                     "https": True,
                     "timestamp": timestamp,
@@ -111,7 +111,7 @@ async def ps_handler(ws: WebSocket, s: Server, name: str):
                 uuid, meta = source.split("=")
                 origin, timestamp = meta.split("@")
                 payload = {
-                    "type": "post",
+                    "operation": "post",
                     "uuid": uuid.split("~")[1],
                     "timestamp": timestamp,
                     "from": origin,
@@ -124,7 +124,7 @@ async def ps_handler(ws: WebSocket, s: Server, name: str):
                 uuid, meta = source.split("=")
                 origin, timestamp = meta.split("@")
                 payload = {
-                    "type": "post",
+                    "operation": "post",
                     "uuid": uuid.split("~")[1],
                     "https": True,
                     "timestamp": timestamp,
@@ -138,7 +138,7 @@ async def ps_handler(ws: WebSocket, s: Server, name: str):
                 uuid, meta = source.split("=")
                 origin, timestamp = meta.split("@")
                 payload = {
-                    "type": "response",
+                    "operation": "response",
                     "uuid": uuid.split("~")[1],
                     "timestamp": timestamp,
                     "from": origin,
@@ -151,7 +151,7 @@ async def ps_handler(ws: WebSocket, s: Server, name: str):
                 uuid, meta = source.split("=")
                 origin, timestamp = meta.split("@")
                 payload = {
-                    "type": "response",
+                    "operation": "response",
                     "uuid": uuid.split("~")[1],
                     "https": True,
                     "timestamp": timestamp,

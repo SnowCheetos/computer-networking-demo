@@ -99,8 +99,10 @@ respond_button.addEventListener('click', (event) => {
     if (curr_message_id) {
         client_ws.send(JSON.stringify({
             operation: 'response',
+            timestamp: String(Date.now()),
             uuid: curr_message_id,
             https: curr_resp_https,
+            from: client_name,
             to: curr_http_origin,
             message: `[RES]${message}[END]`
         }));
@@ -148,15 +150,15 @@ function initClientWebSocket(name) {
             client_name_color[data.from] = generateRandomColor();
             cacheColorMap();
         }
-        if (data.type === 'udp') {
+        if (data.operation === 'udp') {
             addUDPMessage(data.timestamp, data.from, data.message);
-        } else if (data.type === 'tcp') {
+        } else if (data.operation === 'tcp') {
             addTCPMessage(data.timestamp, data.uuid, data.from, data.message);
-        } else if (data.type === 'get') {
+        } else if (data.operation === 'get') {
             addGETMessage(data.timestamp, data.uuid, data.from, data.message, data.https);
-        } else if (data.type === 'post') {
+        } else if (data.operation === 'post') {
             addPOSTMessage(data.timestamp, data.uuid, data.from, data.message, data.https);
-        } else if (data.type === 'response') {
+        } else if (data.operation === 'response') {
             addRESMessage(data.timestamp, data.uuid, data.from, data.message, data.https);
         };
         trimListToMaxSize('private-messages', max_messages);
@@ -432,7 +434,10 @@ document.getElementById('udp-send-button').addEventListener('click', function(ev
         if (message.length > 0) {
             client_ws.send(JSON.stringify({
                 operation: 'udp',
+                timestamp: String(Date.now()),
                 uuid: window.location.protocol === 'https:' ? crypto.randomUUID() : uuidv4(),
+                https: false,
+                from: client_name,
                 to: udp_destination,
                 message: `[BEG]${message}[END]`}))};
         udp_destination = null;
@@ -452,7 +457,10 @@ document.getElementById('tcp-message').addEventListener('input', function(e) {
         // Send the current message chunk
         client_ws.send(JSON.stringify({
             operation: 'tcp',
+            timestamp: String(Date.now()),
             uuid: tcp_uuid,
+            https: false,
+            from: client_name,
             to: tcp_destination,
             message: tcp_message + '[CON]' // Append [CON] to indicate continuation
         }));
@@ -471,7 +479,10 @@ document.getElementById('tcp-done-button').addEventListener('click', function(ev
         if (tcp_message !== '[BEG]') {
             client_ws.send(JSON.stringify({
                 operation: 'tcp',
+                timestamp: String(Date.now()),
                 uuid: tcp_uuid,
+                https: false,
+                from: client_name,
                 to: tcp_destination,
                 message: tcp_message + '[END]'}))};
         tcp_destination = null; // Clear the destination
@@ -522,8 +533,10 @@ document.getElementById('http-send-button').addEventListener('click', function(e
             }
             client_ws.send(JSON.stringify({
                 operation: 'get',
+                timestamp: String(Date.now()),
                 https: use_https,
                 uuid: http_request_uuid,
+                from: client_name,
                 to: http_destination,
                 message: `[BEG]${message}[REQ]`}));
             http_requests[http_request_uuid] = `What is your ${get_option}?`;
@@ -539,8 +552,10 @@ document.getElementById('http-send-button').addEventListener('click', function(e
             if (post_body.length > 0) {
                 client_ws.send(JSON.stringify({
                     operation: 'post',
+                    timestamp: String(Date.now()),
                     https: use_https,
                     uuid: http_request_uuid,
+                    from: client_name,
                     to: http_destination,
                     message: `[BEG]${message}[REQ]`}))};
             http_requests[http_request_uuid] = post_body + '?';

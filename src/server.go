@@ -16,6 +16,7 @@ type Server struct {
 	clients map[string]*Client
 	logs    []string
 	mutex   sync.RWMutex
+	maxLogs int
 }
 
 var upgrader = websocket.Upgrader{
@@ -24,9 +25,10 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-func NewServer() *Server {
+func NewServer(maxLogs int) *Server {
 	return &Server{
 		clients: make(map[string]*Client),
+		maxLogs: maxLogs,
 	}
 }
 
@@ -34,7 +36,9 @@ func (s *Server) addClient(clientName string, conn *websocket.Conn) *Client {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
-	s.writeToLogs(fmt.Sprintf(clientName, " Just Joined!"))
+	s.writeToLogs(makeLogMessage(getTimestamp(),
+		fmt.Sprintf(`<div class="name-tag">%s</div><div>just joined!</div>`, clientName)))
+
 	client := Client{name: clientName, conn: conn, send: make(chan Message)}
 	s.clients[clientName] = &client
 	return &client
@@ -48,6 +52,8 @@ func (s *Server) delClient(clientName string) {
 		close(client.send)
 		delete(s.clients, clientName)
 	}
+	s.writeToLogs(makeLogMessage(getTimestamp(),
+		fmt.Sprintf(`<div class="name-tag">%s</div><div>just left!</div>`, clientName)))
 }
 
 func (s *Server) getClient(clientName string) (*Client, bool) {
@@ -124,7 +130,7 @@ func (s *Server) GlobalDataStream(w http.ResponseWriter, r *http.Request) {
 	for {
 		message := GlobalData{
 			Clients: s.getClientList(),
-			Logs:    s.getGlobalLogs(50),
+			Logs:    s.getGlobalLogs(s.maxLogs),
 		}
 
 		data, err := json.Marshal(message)

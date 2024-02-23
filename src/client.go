@@ -31,9 +31,23 @@ func (c *Client) readPump(s *Server) {
 		}
 
 		var data Message
+
 		if err := json.Unmarshal([]byte(message), &data); err != nil {
 			log.Println("Error parsing JSON")
 			break
+		}
+
+		switch data.Operation {
+		case "udp":
+			s.writeToLogs(makeUDPMessage(getTimestamp(), data.From, data.To, data.Message))
+		case "tcp":
+			s.writeToLogs(makeTCPMessage(getTimestamp(), data.From, data.To, data.Message))
+		case "get":
+			s.writeToLogs(makeGETMessage(getTimestamp(), data.From, data.To, data.Message))
+		case "post":
+			s.writeToLogs(makePOSTMessage(getTimestamp(), data.From, data.To, data.Message))
+		case "response":
+			s.writeToLogs(makeHTTPMessage(getTimestamp(), data.From, data.To, data.Message))
 		}
 
 		if client, exists := s.getClient(data.To); exists {

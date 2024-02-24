@@ -17,15 +17,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"])
 
-app.mount(
-    "/static", 
-    StaticFiles(directory="./static"), 
-    name="static")
-
-@app.get("/")
-async def home():
-    return FileResponse("./static/index.html")
-
 @app.get("/client/init/{client_name}")
 async def init_client(client_name: str):
     if await server.redis_client.sismember("clients", client_name):
@@ -212,3 +203,5 @@ async def global_data_stream(websocket: WebSocket):
     finally:
         if websocket.client_state != WebSocketState.DISCONNECTED: 
             await websocket.close()
+
+app.mount("/", StaticFiles(directory="static", html=True), name="static")

@@ -91,7 +91,7 @@ def make_http_message(timestamp: str, source: str, target: str, message: str) ->
     <div class="global-message-class">
         <div class="global-message-meta">
             <div class="timestamp-class">{timestamp}</div>
-            <div class="http-tag">HTTP</div>
+            <div class="http-tag">RES</div>
             <div class="name-tag">{source}</div>
             <div>sent a message to</div>
             <div class="name-tag">{target}:</div>

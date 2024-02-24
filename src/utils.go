@@ -101,7 +101,7 @@ func makeHTTPMessage(timestamp, from, to, message string) string {
     <div class="global-message-class">
         <div class="global-message-meta">
             <div class="timestamp-class">%s</div>
-            <div class="http-tag">HTTP</div>
+            <div class="http-tag">RES</div>
             <div class="name-tag">%s</div>
             <div>sent a message to</div>
             <div class="name-tag">%s:</div>

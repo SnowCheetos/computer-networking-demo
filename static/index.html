@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <link rel="stylesheet" href="style.css">
+    <link rel="shortcut icon" href="favicon.ico" type="image/x-icon">
 </head>
 
 <body>
@@ -60,9 +61,11 @@
 
             <div id="http-get-configuration">
                 <div id="http-get-destination"></div>
-                <select name="http-get-options" id="http-get-options"> 
-                    <option value="Age">Age</option> 
-                    <option value="Favoriate Food">Favoriate Food</option> 
+                <select name="http-get-options" id="http-get-options">  
+                    <option value="favoriate food">Favoriate Food</option> 
+                    <option value="favoriate movie">Favoriate Movie</option>
+                    <option value="favoriate book">Favoriate Book</option>
+                    <option value="favoriate sport">Favoriate Sport</option>
                 </select>
             </div>
 
@@ -80,6 +83,18 @@
         <div>Response:</div>
         <textarea class="http-response-body" name="http-response-body"></textarea><br><br>
         <input type="submit" class="http-response-send-button" value="Send">
+    </div>
+
+    <div id="websocket-holder">
+        <div id="websocket-messages-holder">
+            <div id="websocket-messages-tag">Messages Inbox</div>
+            <div id="websocket-messages-inner-holder">
+                <ul id="websocket-messages"></ul>
+            </div>
+        </div>
+        <p>Message:</p>
+        <textarea id="websocket-message" name="websocket-message"></textarea><br><br>
+        <input type="submit" id="websocket-send-button" value="Send">
     </div>
 
     <script type="module" src="script.js"></script>

@@ -251,13 +251,12 @@ html, body {
 
 #global-message-logs-inner-holder {
     overflow: auto;
-    height: 100%;
+    height: 95%;
 }
 
 #global-message-logs {
+    padding: 10px;
     list-style-type: none;
-    padding-bottom: 20px;
-    flex-grow: 30;
 }
 
 .log-message {
@@ -323,7 +322,7 @@ html, body {
     padding-left: 10px;
     border-radius: 4px;
     background: #f3f3f3;
-    width: 95%;
+    width: 90%;
 }
 
 #clients-list li:hover
@@ -341,9 +340,40 @@ html, body {
     width: 100%;
     position: relative;
     margin: 10px;
-    display: flex;
+    display: none;
     flex-direction: row;
     justify-content: flex-end;
+    word-wrap:break-word;
+}
+
+@media (max-width: 900px) {
+    #clients-list li {
+        flex-direction: column;
+        align-items: center;
+        max-width: 80%;
+    }
+
+    .client-buttons 
+    {
+        flex-direction: column; /* Stack buttons vertically on small screens */
+        align-items: center; /* Center-align the buttons for a neat look */
+        gap: 5px;
+        width: 100%;
+    }
+
+    .udp-button,
+    .tcp-button,
+    .http-button,
+    .https-button,
+    .websocket-button
+    {
+        padding: 2px;
+        width: 100%;
+        margin-right: 10px;
+        text-align: center;
+        border: 1px solid #141414;
+        border-radius: 3px;
+    }
 }
 
 .udp-button,

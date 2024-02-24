@@ -22,6 +22,7 @@ let client_name_color = {};
 let use_https = false;
 let resp_https = {};
 let ssl_key = "fb1c6285e40ae416300b35d2d2c400e45306b81ed3e9ab3c9297a7c688c6edf8";
+let curr_selected_client = null;
 
 function uuidv4() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -184,7 +185,7 @@ function addRESMessage(timestamp, message_id, origin, data, https) {
     <div class="http-message-class">
         <div class="http-metadata-tag">
             <div class="timestamp-class">${timestamp}</div>
-            <div class="http-tag">HTTP</div>
+            <div class="http-tag">RES</div>
             <div class="http-origin">${origin}:</div>
         </div>
         <div class="http-message-content">
@@ -339,6 +340,9 @@ function populateClients(container, data) {
     Array.from(container.children).forEach(child => {
         if (!dataSet.has(child.id)) {
             container.removeChild(child);
+            if (curr_selected_client == `${child.id}:client-buttons`) {
+                curr_selected_client = null;
+            }
         }
     });
 
@@ -350,7 +354,7 @@ function populateClients(container, data) {
             listItem.id = item;
             listItem.innerHTML = `
             <div class="client-name-tag">${item}</div>
-            <div class="client-buttons"> 
+            <div class="client-buttons" id="${item}:client-buttons"> 
                 <div class="udp-button">UDP</div>
                 <div class="tcp-button">TCP</div>
                 <div class="http-button">HTTP</div>
@@ -358,6 +362,9 @@ function populateClients(container, data) {
                 <div class="websocket-button">WebSocket</div>
             </div>`;
 
+            if (!curr_selected_client) {
+                curr_selected_client = `${item}:client-buttons`;
+            }
             const udp_button = listItem.querySelector('.udp-button');
             udp_button.addEventListener('click', (event) => {
                 event.preventDefault();
@@ -405,6 +412,17 @@ function populateClients(container, data) {
             }
             listItem.querySelector('.client-name-tag').style.color = client_name_color[item];
             container.appendChild(listItem);
+            document.getElementById(curr_selected_client).style.display = 'flex';
+
+            listItem.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                if (curr_selected_client !== null) {
+                    document.getElementById(curr_selected_client).style.display = 'none';
+                }
+                document.getElementById(`${item}:client-buttons`).style.display = 'flex';
+                curr_selected_client = `${item}:client-buttons`;
+            })
         }
     });
 };

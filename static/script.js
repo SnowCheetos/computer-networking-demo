@@ -406,6 +406,14 @@ function populateClients(container, data) {
                 http_destination = item;
             });
 
+            const websocket_button = listItem.querySelector('.websocket-button');
+            websocket_button.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                const websocket_holder = document.getElementById('websocket-holder');
+                websocket_holder.style.display = 'flex';
+            });
+
             if (!client_name_color[item]) {
                 client_name_color[item] = generateRandomColor();
                 cacheColorMap();

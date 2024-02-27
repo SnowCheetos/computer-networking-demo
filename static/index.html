@@ -86,15 +86,19 @@
     </div>
 
     <div id="websocket-holder">
-        <div id="websocket-messages-holder">
-            <div id="websocket-messages-tag">Messages Inbox</div>
-            <div id="websocket-messages-inner-holder">
+        <div class="websocket-messages-holder">
+            <div class="websocket-messages-tag">Messages Inbox</div>
+            <div class="websocket-messages-inner-holder">
                 <ul id="websocket-messages"></ul>
             </div>
+
+            <div class="websocket-input-holder">
+                <p>Message:</p>
+                <textarea id="websocket-message" name="websocket-message"></textarea><br><br>
+                <input type="submit" id="websocket-send-button" value="Send">
+            </div>
+            
         </div>
-        <p>Message:</p>
-        <textarea id="websocket-message" name="websocket-message"></textarea><br><br>
-        <input type="submit" id="websocket-send-button" value="Send">
     </div>
 
     <script type="module" src="script.js"></script>

@@ -310,7 +310,7 @@ html, body {
 
 #clients-list {
     list-style-type: none;
-    padding: 5px;
+    padding: 10px;
 }
 
 #clients-list li {
@@ -347,10 +347,15 @@ html, body {
 }
 
 @media (max-width: 900px) {
+    #clients-list-inner-holder {
+        max-height: 80%;
+    }
+
     #clients-list li {
         flex-direction: column;
         align-items: center;
         max-width: 80%;
+        padding: 15px;
     }
 
     .client-buttons 
@@ -420,7 +425,8 @@ html, body {
 }
 
 #udp-message-holder,
-#tcp-message-holder
+#tcp-message-holder,
+#websocket-holder
 {
     display: none;
     position: fixed;
@@ -527,6 +533,31 @@ html, body {
 #http-send-button:hover,
 .http-response-send-button:hover {
     cursor: pointer;
+}
+
+#websocket-holder {
+    height: 50%;
+}
+
+.websocket-messages-holder {
+    position: relative;
+    height:80%;
+    width: 90%;
+}
+
+.websocket-messages-inner-holder {
+    position: relative;
+    height:100%;
+    border-radius: 3px;
+    border: 1px solid rgb(151, 151, 151);
+    background-color: #fffdfd;
+}
+
+.websocket-input-holder {
+    position: relative;
+    max-height: 20%;
+    display: flex;
+    flex-direction: row;
 }
 
 textarea {

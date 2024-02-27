@@ -23,6 +23,8 @@ let use_https = false;
 let resp_https = {};
 let ssl_key = "fb1c6285e40ae416300b35d2d2c400e45306b81ed3e9ab3c9297a7c688c6edf8";
 let curr_selected_client = null;
+let ws_destination = null;
+let ws_convos = {};
 
 function uuidv4() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -73,12 +75,20 @@ function cacheColorMap() {
     sessionStorage.setItem('color-map', JSON.stringify(client_name_color));
 }
 
+function cacheWSConvos() {
+    sessionStorage.setItem('ws-convos', JSON.stringify(ws_convos));
+}
+
 function loadCachedMessages() {
     document.getElementById('private-messages').innerHTML = sessionStorage.getItem('messages');
 }
 
 function loadColorMap() {
     client_name_color = JSON.parse(sessionStorage.getItem('color-map'));
+}
+
+function loadWSConvos() {
+    ws_convos = JSON.parse(sessionStorage.getItem('ws-convos'));
 }
 
 if (sessionStorage.getItem('name') !== null) {
@@ -123,6 +133,10 @@ function initClient(name) {
         loadColorMap();
     }
 
+    if (sessionStorage.getItem('ws-convos') !== null) {
+        loadWSConvos();
+    }
+
     if (!client_name_color[name]) {
         client_name_color[name] = generateRandomColor();
         cacheColorMap();
@@ -161,6 +175,9 @@ function initClientWebSocket(name) {
             addPOSTMessage(data.timestamp, data.uuid, data.from, data.message, data.https);
         } else if (data.operation === 'response') {
             addRESMessage(data.timestamp, data.uuid, data.from, data.message, data.https);
+        } else if (data.operation === 'ws') {
+            addWSMessage(data.timestamp, data.uuid, data.from, data.message, data.https, false);
+            trimListToMaxSize('websocket-messages', max_messages)
         };
         trimListToMaxSize('private-messages', max_messages);
         cachePrivateMessages();
@@ -200,6 +217,47 @@ function addRESMessage(timestamp, message_id, origin, data, https) {
     listItem.querySelector('.http-origin').style.color = client_name_color[origin];
     messages.appendChild(listItem);
 }
+
+function addWSMessage(timestamp, message_id, origin, data, https, self) {
+    const messages = document.getElementById('websocket-messages');
+    const listItem = document.createElement('li');
+    if (!ws_convos[origin]) {
+        ws_convos[origin] = {
+            on: false,
+            messages: []
+        };
+    }
+    
+    let msg = '';
+    if (!self) {
+        msg = `
+        <div class="ws-message-class">
+            <div class="ws-metadata-tag">
+                <div class="timestamp-class">${timestamp}</div>
+                <div class="ws-tag">WS</div>
+                <div class="ws-origin">${origin}:</div>
+            </div>
+            <div class="ws-message-content">${data}</div>
+        </div>`;
+    } else {
+        msg = `
+        <div class="self-message-class">
+            <div class="self-tag">You:</div>
+            <div class="self-message-content">${data}</div>
+        </div>`;
+    }
+
+    ws_convos[origin].messages.push(msg);
+    if (ws_convos[origin].on) {
+        listItem.innerHTML = msg;
+        if (!self) {
+            listItem.querySelector('.ws-origin').style.color = client_name_color[origin];
+        }
+        messages.appendChild(listItem);
+    }
+
+    cacheWSConvos();
+};
 
 function addUDPMessage(timestamp, origin, data) {
     const messages = document.getElementById('private-messages');
@@ -412,6 +470,21 @@ function populateClients(container, data) {
                 event.stopPropagation();
                 const websocket_holder = document.getElementById('websocket-holder');
                 websocket_holder.style.display = 'flex';
+                ws_destination = item;
+                if (!ws_convos[item]) {
+                    ws_convos[item] = {
+                        on: true,
+                        messages: []
+                    };
+                } else {
+                    ws_convos[item].on = true;
+                    const messages = document.getElementById('websocket-messages');
+                    const listItem = document.createElement('li');
+                    ws_convos[item].messages.forEach(msg => {
+                        listItem.innerHTML = msg;
+                        messages.appendChild(listItem);
+                    });
+                }
             });
 
             if (!client_name_color[item]) {
@@ -595,3 +668,35 @@ document.getElementById('http-send-button').addEventListener('click', function(e
     document.getElementById('http-post-destination').textContent = '';
     document.getElementById('http-request-holder').style.display = 'none';
 });
+
+document.getElementById('websocket-send-button').addEventListener('click', function(event) {
+    event.stopPropagation();
+    event.preventDefault();
+    let ts = String(Date.now());
+    let id = window.location.protocol === 'https:' ? crypto.randomUUID() : uuidv4();
+    if (ws_destination !== null) {
+        var message = document.querySelector('.websocket-message').value;
+        if (message.length > 0) {
+            client_ws.send(JSON.stringify({
+                operation: 'ws',
+                timestamp: ts,
+                uuid: id,
+                https: false,
+                from: client_name,
+                to: ws_destination,
+                message: `[BEG]${message}[END]`}))};
+        // ws_destination = null;
+        addWSMessage(ts, id, ws_destination, message, false, true);
+    };
+    document.querySelector('.websocket-message').value = '';
+    // document.getElementById('websocket-holder').style.display = 'none';
+});
+
+document.querySelector('.websocket-window-close').addEventListener('click', (event) => {
+    event.stopPropagation();
+    event.preventDefault();
+    document.getElementById('websocket-holder').style.display = 'none';
+    ws_destination = null;
+    document.querySelector('.websocket-message').value = '';
+    document.getElementById('websocket-messages').innerHTML = '';
+})

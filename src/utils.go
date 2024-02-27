@@ -110,3 +110,18 @@ func makeHTTPMessage(timestamp, from, to, message string) string {
     </div>
     `, timestamp, from, to, message)
 }
+
+func makeWSMessage(timestamp, from, to, message string) string {
+	return fmt.Sprintf(`
+    <div class="global-message-class">
+        <div class="global-message-meta">
+            <div class="timestamp-class">%s</div>
+            <div class="ws-tag">WS</div>
+            <div class="name-tag">%s</div>
+            <div>sent a message to</div>
+            <div class="name-tag">%s:</div>
+        </div>  
+        <div class="global-message-content">%s</div>
+    </div>
+    `, timestamp, from, to, message)
+}

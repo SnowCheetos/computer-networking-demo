@@ -111,10 +111,20 @@ html, body {
 .tcp-message-class,
 .get-message-class,
 .post-message-class,
-.http-message-class {
+.http-message-class,
+.ws-message-class
+{
     display: flex;
     flex-direction: column;
     align-items: start;
+    margin-bottom: 5px;
+    gap: 7px;
+}
+
+.self-message-class {
+    display: flex;
+    flex-direction: column;
+    align-items: end;
     margin-bottom: 5px;
     gap: 7px;
 }
@@ -123,16 +133,30 @@ html, body {
 .tcp-metadata-tag,
 .get-metadata-tag,
 .post-metadata-tag,
-.http-metadata-tag {
+.http-metadata-tag,
+.ws-metadata-tag 
+{
     display: flex;
     flex-direction: row;
     align-items: center;
     gap: 5px;
 }
 
+.self-message-content {
+    position: relative;
+    padding: 5px;
+    background-color: #99d3fb;
+    border-radius: 3px;
+    margin-bottom: 5px;
+    word-wrap:break-word;
+    max-width: 90%;
+}
+
 .udp-message-content, 
 .tcp-message-content,
-.http-message-content {
+.http-message-content,
+.ws-message-content
+{
     position: relative;
     padding: 5px;
     background-color: #f3f3f3;
@@ -144,7 +168,8 @@ html, body {
 
 .udp-message-content::after,
 .tcp-message-content::after,
-.http-message-content::after
+.http-message-content::after,
+.ws-message-content::after
 {
     content: '';
 	position: absolute;
@@ -164,6 +189,8 @@ html, body {
 .get-origin,
 .post-origin,
 .http-origin,
+.ws-origin,
+.self-tag,
 .name-tag {
     font-weight: bold;
 }
@@ -211,6 +238,12 @@ html, body {
     padding: 2px;
     border-radius: 2px;
     background: rgb(163, 255, 77);
+}
+
+.ws-tag {
+    padding: 2px;
+    border-radius: 2px;
+    background: rgb(249, 211, 130);
 }
 
 .http-message-content {
@@ -346,41 +379,6 @@ html, body {
     word-wrap:break-word;
 }
 
-@media (max-width: 900px) {
-    #clients-list-inner-holder {
-        max-height: 80%;
-    }
-
-    #clients-list li {
-        flex-direction: column;
-        align-items: center;
-        max-width: 80%;
-        padding: 15px;
-    }
-
-    .client-buttons 
-    {
-        flex-direction: column; /* Stack buttons vertically on small screens */
-        align-items: center; /* Center-align the buttons for a neat look */
-        gap: 5px;
-        width: 100%;
-    }
-
-    .udp-button,
-    .tcp-button,
-    .http-button,
-    .https-button,
-    .websocket-button
-    {
-        padding: 2px;
-        width: 100%;
-        margin-right: 10px;
-        text-align: center;
-        border: 1px solid #141414;
-        border-radius: 3px;
-    }
-}
-
 .udp-button,
 .tcp-button,
 .http-button,
@@ -425,13 +423,31 @@ html, body {
 }
 
 #udp-message-holder,
-#tcp-message-holder,
-#websocket-holder
+#tcp-message-holder
 {
     display: none;
     position: fixed;
     width: 40%;
     height: 40%;
+    border: 1px solid #141414;
+    border-radius: 3px;
+    background-color: rgb(245, 245, 245);
+    align-items: center;
+    flex-direction: column;
+    margin: 5px;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+}
+
+#websocket-holder
+{
+    display: none;
+    position: absolute;
+    width: 40%;
+    height: 40%;
+    max-height: 50%;
     border: 1px solid #141414;
     border-radius: 3px;
     background-color: rgb(245, 245, 245);
@@ -536,21 +552,54 @@ html, body {
 }
 
 #websocket-holder {
-    height: 50%;
+    /* height: auto; */
+    min-height: 50%;
+}
+
+.websocket-upper-holder {
+    display: flex;
+    padding: 10px;
+    justify-content: space-between;
+    align-items: center; /* This aligns items vertically in the center, optional */
+    flex-direction: row;
+}
+
+.websocket-window-close {
+    position: absolute;
+    right: 10px; /* Positions the div at the far right */
+    cursor: pointer; /* Makes it clear the div is clickable */
+    /* padding: 2px; */
+    width: 20px; /* Set the width */
+    height: 20px; /* Set the height to the same value as width to make it a square */
+    color: rgb(97, 97, 97);
+    font-size: 20px;
+    border: 1px solid black;
+    border-radius: 2px;
+    align-items: center;
+    text-align: center;
+    justify-content: center;
+    background-color: rgb(255, 147, 147);
 }
 
 .websocket-messages-holder {
     position: relative;
-    height:80%;
+    height: 75%;
     width: 90%;
 }
 
 .websocket-messages-inner-holder {
-    position: relative;
+    /* position: relative; */
     height:100%;
+    max-height: 100%;
+    overflow: auto;
     border-radius: 3px;
     border: 1px solid rgb(151, 151, 151);
     background-color: #fffdfd;
+}
+
+#websocket-messages {
+    list-style-type: none;
+    padding: 10px;
 }
 
 .websocket-input-holder {
@@ -558,7 +607,60 @@ html, body {
     max-height: 20%;
     display: flex;
     flex-direction: row;
+    align-items: center;
+    gap: 5px;
 }
+
+.websocket-message {
+    resize: none;
+    position: relative;
+    max-height: 80%;
+    height: 60%;
+    width: 90%;
+    border: 1px solid #b3b3b3;
+    border-radius: 3px;
+    overflow-y: auto;
+}
+
+@media (max-width: 900px) {
+    #clients-list-inner-holder {
+        max-height: 80%;
+    }
+
+    #clients-list li {
+        flex-direction: column;
+        align-items: center;
+        max-width: 80%;
+        padding: 15px;
+    }
+
+    .client-buttons 
+    {
+        flex-direction: column; /* Stack buttons vertically on small screens */
+        align-items: center; /* Center-align the buttons for a neat look */
+        gap: 5px;
+        width: 100%;
+    }
+
+    #websocket-holder {
+        width: 80%;
+    }
+
+    .udp-button,
+    .tcp-button,
+    .http-button,
+    .https-button,
+    .websocket-button
+    {
+        padding: 2px;
+        width: 100%;
+        margin-right: 10px;
+        text-align: center;
+        border: 1px solid #141414;
+        border-radius: 3px;
+    }
+}
+
 
 textarea {
     /* iOS Safari */

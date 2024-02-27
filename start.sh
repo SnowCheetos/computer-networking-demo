@@ -1,5 +1,7 @@
 #!/bin/bash
 
+language="go"
+
 while getopts l: flag
 do
     case "${flag}" in

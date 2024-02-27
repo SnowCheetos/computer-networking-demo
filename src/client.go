@@ -9,10 +9,10 @@ import (
 )
 
 type Client struct {
-	name       string
-	conn       *websocket.Conn
-	globalConn *websocket.Conn
-	send       chan Message
+	name string
+	conn *websocket.Conn
+	// globalConn *websocket.Conn
+	send chan Message
 }
 
 func (c *Client) readPump(s *Server) {
@@ -48,6 +48,8 @@ func (c *Client) readPump(s *Server) {
 			s.writeToLogs(makePOSTMessage(getTimestamp(), data.From, data.To, data.Message))
 		case "response":
 			s.writeToLogs(makeHTTPMessage(getTimestamp(), data.From, data.To, data.Message))
+		case "ws":
+			s.writeToLogs(makeWSMessage(getTimestamp(), data.From, data.To, data.Message))
 		}
 
 		if client, exists := s.getClient(data.To); exists {

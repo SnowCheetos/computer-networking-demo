@@ -151,6 +151,20 @@ async def ps_handler(ws: WebSocket, s: Server, name: str):
                 }
                 await ws.send_json(payload)
 
+            elif operation == "ws":
+                source, data_ = message["data"].split("//")
+                uuid, meta = source.split("=")
+                origin, timestamp = meta.split("@")
+                payload = {
+                    "operation": "ws",
+                    "uuid": uuid.split("~")[1],
+                    "https": False,
+                    "timestamp": timestamp,
+                    "from": origin,
+                    "message": (data_.split("[BEG]")[1]).split("[END]")[0]
+                }
+                await ws.send_json(payload)
+
     await message_channel.aclose()
 
 @app.websocket("/connect/{client_name}")

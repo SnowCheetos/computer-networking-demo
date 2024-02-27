@@ -99,3 +99,16 @@ def make_http_message(timestamp: str, source: str, target: str, message: str) ->
         <div class="global-message-content">{message}</div>
     </div>
     """
+
+def make_ws_message(timestamp: str, source: str, target: str, message: str):
+	return f"""
+    <div class="global-message-class">
+        <div class="global-message-meta">
+            <div class="timestamp-class">{timestamp}</div>
+            <div class="ws-tag">WS</div>
+            <div class="name-tag">{source}</div>
+            <div>sent a message to</div>
+            <div class="name-tag">{target}:</div>
+        </div>  
+        <div class="global-message-content">{message}</div>
+    </div>"""

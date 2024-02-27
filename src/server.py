@@ -35,6 +35,8 @@ class Server:
                 await self.write_to_queue(make_post_message(timestamp, source, target, message))
             elif operation == "response" or operation == "responses":
                 await self.write_to_queue(make_http_message(timestamp, source, target, message))
+            elif operation == "ws":
+                await self.write_to_queue(make_ws_message(timestamp, source, target, message))
             else:
                 await self.write_to_queue(
                     f"{uuid}={source}->{target}@{timestamp}//{message}")

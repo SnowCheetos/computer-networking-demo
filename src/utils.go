@@ -20,6 +20,10 @@ type GlobalData struct {
 	Logs    []string `json:"global_logs"`
 }
 
+type InitResp struct {
+	Admin bool `json:"admin"`
+}
+
 func getTimestamp() string {
 	return time.Now().Format("15:04:05")
 }

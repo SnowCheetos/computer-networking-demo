@@ -24,6 +24,33 @@
                     <ul id="clients-list"></ul>
                 </div>
             </div>
+
+            <div id="admin-container">
+                <div id="admin-commands-tag">Admin Commands</div>
+                <div id="admin-commands-holder">
+                    <ul id="admin-commands">
+                        <li>
+                            <div id="unlock-tcp">Unlock TCP</div>
+                        </li>
+                        <li>
+                            <div id="unlock-http">Unlock HTTP</div>
+                        </li>
+                        <li>
+                            <div id="unlock-https">Unlock HTTPS</div>
+                        </li>
+                        <li>
+                            <div id="unlock-ws">Unlock WebSocket</div>
+                        </li>
+                        <li>
+                            <div id="shadow-ban">Ban Client</div>
+                        </li>
+                        <li>
+                            <div id="shadow-unban">Unban Client</div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
             <div id="private-messages-holder">
                 <div id="private-messages-tag">Messages Inbox</div>
                 <div id="private-messages-inner-holder">
@@ -37,6 +64,22 @@
                 <ul id="global-message-logs"></ul>
             </div>
         </div>
+    </div>
+
+    <div id="ban-holder">
+        <p>Who to ban:</p>
+        <div id="ban-options-holder">
+            <select id="bannable-clients"></select>
+        </div>
+        <input type="submit" id="ban-button" value="Ban">
+    </div>
+
+    <div id="unban-holder">
+        <p>Who to unban:</p>
+        <div id="unban-options-holder">
+            <select id="unbannable-clients"></select>
+        </div>
+        <input type="submit" id="unban-button" value="Unban">
     </div>
 
     <div id="udp-message-holder">

@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	server := src.NewServer(50)
+	server := src.NewServer(50, "961e187b04f4c1d6c087401cdfb2b11414a3e91a780fd51b599ba31ea5ea09a3")
 	r := mux.NewRouter()
 
 	r.HandleFunc("/client/init/{client_name}", server.InitClient).Methods("GET")

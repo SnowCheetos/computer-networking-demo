@@ -1,7 +1,7 @@
 import asyncio
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import Response, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.websockets import WebSocket, WebSocketState, WebSocketDisconnect
 from src.server import Server, make_log_message, get_timestamp
@@ -22,7 +22,8 @@ async def init_client(client_name: str):
     if await server.redis_client.sismember("clients", client_name):
         return Response(status_code=400, content="Client name already registered")
     await server.add_client(client_name)
-    return Response(status_code=200)
+    admin = await server.is_admin(client_name)
+    return JSONResponse(status_code=200, content={"admin": admin})
 
 async def ws_handler(ws: WebSocket, s: Server, name: str):
     while ws.client_state != WebSocketState.DISCONNECTED:

@@ -2,6 +2,7 @@ const ws_protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 const response_holder = document.getElementById('http-response-holder');
 const respond_button = response_holder.querySelector('.http-response-send-button');
 const max_messages = 10;
+let admin = false;
 let tcp_packet_size = 6;
 let client_ws = null;
 let global_ws = null;
@@ -25,6 +26,16 @@ let ssl_key = "fb1c6285e40ae416300b35d2d2c400e45306b81ed3e9ab3c9297a7c688c6edf8"
 let curr_selected_client = null;
 let ws_destination = null;
 let ws_convos = {};
+let locked_content = {
+    self: false,
+    udp: false,
+    tcp: true,
+    http: true,
+    https: true,
+    ws: true
+};
+let clients_list = new Set();
+let banned_list = new Set();
 
 function uuidv4() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -79,6 +90,10 @@ function cacheWSConvos() {
     sessionStorage.setItem('ws-convos', JSON.stringify(ws_convos));
 }
 
+function cacheLocked() {
+    sessionStorage.setItem('locked', JSON.stringify(locked_content));
+}
+
 function loadCachedMessages() {
     document.getElementById('private-messages').innerHTML = sessionStorage.getItem('messages');
 }
@@ -89,6 +104,10 @@ function loadColorMap() {
 
 function loadWSConvos() {
     ws_convos = JSON.parse(sessionStorage.getItem('ws-convos'));
+}
+
+function loadLocked() {
+    locked_content = JSON.parse(sessionStorage.getItem('locked'));
 }
 
 if (sessionStorage.getItem('name') !== null) {
@@ -136,17 +155,34 @@ function initClient(name) {
     if (sessionStorage.getItem('ws-convos') !== null) {
         loadWSConvos();
     }
+    if (sessionStorage.getItem('locked') !== null) {
+        loadLocked();
+    }
 
     if (!client_name_color[name]) {
         client_name_color[name] = generateRandomColor();
         cacheColorMap();
     }
-    console.log(`${window.location.protocol}//${window.location.host}/client/init/${name}`);
+
     fetch(`${window.location.protocol}//${window.location.host}/client/init/${name}`)        
     .then(response => {
         if (response.status == 200) {
-            initClientWebSocket(name);
-            initGlobalWebSocket();
+            response.json().then(data => { // Wait for the Promise to resolve
+                if (data.admin) {
+                    admin = true;
+                    locked_content = {
+                        udp: false,
+                        tcp: false,
+                        http: false,
+                        https: false,
+                        ws: false
+                    };
+                    document.getElementById('admin-container').style.display = 'flex';
+                }
+                loadBanned();
+                initClientWebSocket(name);
+                initGlobalWebSocket();
+            });
         } else if (response.status === 400) {
             document.getElementById('duplicated-name').style.display = 'flex';
         }
@@ -178,13 +214,37 @@ function initClientWebSocket(name) {
         } else if (data.operation === 'ws') {
             addWSMessage(data.timestamp, data.uuid, data.from, data.message, data.https, false);
             trimListToMaxSize('websocket-messages', max_messages)
+        } else if (data.operation === 'admin_unlock_tcp') {
+            locked_content.tcp = false;
+            displayContent('.tcp-button');
+        } else if (data.operation === 'admin_unlock_http') {
+            locked_content.http = false;
+            displayContent('.http-button');
+        } else if (data.operation === 'admin_unlock_https') {
+            locked_content.https = false;
+            displayContent('.https-button');
+        } else if (data.operation === 'admin_unlock_ws') {
+            locked_content.ws = false;
+            displayContent('.websocket-button');
+        } else if (data.operation === 'admin_ban') {
+            locked_content.self = true;
+        } else if (data.operation === 'admin_unban') {
+            locked_content.self = false;
         };
         trimListToMaxSize('private-messages', max_messages);
         cachePrivateMessages();
+        cacheLocked();
     };
     document.getElementById('input-name').style.display = 'none';
     document.getElementById('main-page').style.display = 'flex';
 };
+
+function displayContent(name) {
+    const items = document.querySelectorAll(name);
+    items.forEach(item => {
+        item.style.display = 'flex';
+    });
+}
 
 function addRESMessage(timestamp, message_id, origin, data, https) {
     const messages = document.getElementById('private-messages');
@@ -254,6 +314,21 @@ function addWSMessage(timestamp, message_id, origin, data, https, self) {
             listItem.querySelector('.ws-origin').style.color = client_name_color[origin];
         }
         messages.appendChild(listItem);
+    }
+
+    if (!self) {
+        const pmessages = document.getElementById('private-messages');
+        const plistItem = document.createElement('li');
+        plistItem.innerHTML = `
+        <div class="ws-message-class">
+            <div class="ws-metadata-tag">
+                <div class="timestamp-class">${timestamp}</div>
+                <div class="ws-tag">WS</div>
+                <div class="ws-origin">${origin}:</div>
+            </div>
+            <div class="ws-message-content">New message from ${origin}</div>
+        </div>`;
+        pmessages.appendChild(plistItem);
     }
 
     cacheWSConvos();
@@ -397,6 +472,7 @@ function populateClients(container, data) {
     // Remove items not in the data
     Array.from(container.children).forEach(child => {
         if (!dataSet.has(child.id)) {
+            clients_list.delete(child.id);
             container.removeChild(child);
             if (curr_selected_client == `${child.id}:client-buttons`) {
                 curr_selected_client = null;
@@ -408,6 +484,7 @@ function populateClients(container, data) {
     data.forEach(item => {
         const exists = Array.from(container.children).some(child => child.id === item);
         if (!exists && item != client_name) {
+            clients_list.add(item);
             const listItem = document.createElement('li');
             listItem.id = item;
             listItem.innerHTML = `
@@ -424,35 +501,53 @@ function populateClients(container, data) {
                 curr_selected_client = `${item}:client-buttons`;
             }
             const udp_button = listItem.querySelector('.udp-button');
+            if (locked_content.udp) {
+                udp_button.style.display = 'none';
+            }
             udp_button.addEventListener('click', (event) => {
                 event.preventDefault();
                 event.stopPropagation();
                 const udp_holder = document.getElementById('udp-message-holder');
-                udp_holder.style.display = 'flex';
+                if (!locked_content.udp) {
+                    udp_holder.style.display = 'flex';
+                }
                 udp_destination = item;
             });
 
             const tcp_button = listItem.querySelector('.tcp-button');
+            if (locked_content.tcp) {
+                tcp_button.style.display = 'none';
+            }
             tcp_button.addEventListener('click', (event) => {
                 event.preventDefault();
                 event.stopPropagation();
                 const tcp_holder = document.getElementById('tcp-message-holder');
-                tcp_holder.style.display = 'flex';
+                if (!locked_content.tcp) {
+                    tcp_holder.style.display = 'flex';
+                }
                 tcp_destination = item;
             });
 
             const http_button = listItem.querySelector('.http-button');
+            if (locked_content.http) {
+                http_button.style.display = 'none';
+            }
             http_button.addEventListener('click', (event) => {
                 event.preventDefault();
                 event.stopPropagation();
                 const http_request_holder = document.getElementById('http-request-holder');
                 document.getElementById('http-get-destination').textContent = `${item}'s`;
                 document.getElementById('http-post-destination').textContent = item;
-                http_request_holder.style.display = 'flex';
+                if (!locked_content.http) {
+                    http_request_holder.style.display = 'flex';
+                }
                 http_destination = item;
             });
             
             const https_button = listItem.querySelector('.https-button');
+            if (locked_content.https) {
+                https_button.style.display = 'none';
+            }
             https_button.addEventListener('click', (event) => {
                 event.preventDefault();
                 event.stopPropagation();
@@ -460,30 +555,37 @@ function populateClients(container, data) {
                 const http_request_holder = document.getElementById('http-request-holder');
                 document.getElementById('http-get-destination').textContent = `${item}'s`;
                 document.getElementById('http-post-destination').textContent = item;
-                http_request_holder.style.display = 'flex';
+                if (!locked_content.https) {
+                    http_request_holder.style.display = 'flex';
+                }
                 http_destination = item;
             });
 
             const websocket_button = listItem.querySelector('.websocket-button');
+            if (locked_content.ws) {
+                websocket_button.style.display = 'none';
+            }
             websocket_button.addEventListener('click', (event) => {
                 event.preventDefault();
                 event.stopPropagation();
                 const websocket_holder = document.getElementById('websocket-holder');
-                websocket_holder.style.display = 'flex';
-                ws_destination = item;
-                if (!ws_convos[item]) {
-                    ws_convos[item] = {
-                        on: true,
-                        messages: []
-                    };
-                } else {
-                    ws_convos[item].on = true;
-                    const messages = document.getElementById('websocket-messages');
-                    const listItem = document.createElement('li');
-                    ws_convos[item].messages.forEach(msg => {
-                        listItem.innerHTML = msg;
-                        messages.appendChild(listItem);
-                    });
+                if (!locked_content.ws) {    
+                    websocket_holder.style.display = 'flex';
+                    ws_destination = item;
+                    if (!ws_convos[item]) {
+                        ws_convos[item] = {
+                            on: true,
+                            messages: []
+                        };
+                    } else {
+                        ws_convos[item].on = true;
+                        const messages = document.getElementById('websocket-messages');
+                        const listItem = document.createElement('li');
+                        ws_convos[item].messages.forEach(msg => {
+                            listItem.innerHTML = msg;
+                            messages.appendChild(listItem);
+                        });
+                    }
                 }
             });
 
@@ -531,14 +633,16 @@ document.getElementById('udp-send-button').addEventListener('click', function(ev
     if (udp_destination !== null) {
         const message = document.getElementById('udp-message').value;
         if (message.length > 0) {
-            client_ws.send(JSON.stringify({
-                operation: 'udp',
-                timestamp: String(Date.now()),
-                uuid: window.location.protocol === 'https:' ? crypto.randomUUID() : uuidv4(),
-                https: false,
-                from: client_name,
-                to: udp_destination,
-                message: `[BEG]${message}[END]`}))};
+            if (!locked_content.self) {
+                client_ws.send(JSON.stringify({
+                    operation: 'udp',
+                    timestamp: String(Date.now()),
+                    uuid: window.location.protocol === 'https:' ? crypto.randomUUID() : uuidv4(),
+                    https: false,
+                    from: client_name,
+                    to: udp_destination,
+                    message: `[BEG]${message}[END]`}))};
+            }
         udp_destination = null;
     };
     document.getElementById('udp-message').value = '';
@@ -553,20 +657,22 @@ document.getElementById('tcp-message').addEventListener('input', function(e) {
     tcp_message += newInput; // Append the new character to the message
 
     if (tcp_destination !== null && tcp_message.length >= tcp_packet_size) {
-        // Send the current message chunk
-        client_ws.send(JSON.stringify({
-            operation: 'tcp',
-            timestamp: String(Date.now()),
-            uuid: tcp_uuid,
-            https: false,
-            from: client_name,
-            to: tcp_destination,
-            message: tcp_message + '[CON]' // Append [CON] to indicate continuation
-        }));
-        tcp_message = '[CON]'; // Clear the message buffer after sending
-        if (tcp_packet_size == 6) {
-            tcp_packet_size = 12;
-        };
+        if (!locked_content.self) {
+            // Send the current message chunk
+            client_ws.send(JSON.stringify({
+                operation: 'tcp',
+                timestamp: String(Date.now()),
+                uuid: tcp_uuid,
+                https: false,
+                from: client_name,
+                to: tcp_destination,
+                message: tcp_message + '[CON]' // Append [CON] to indicate continuation
+            }));
+            tcp_message = '[CON]'; // Clear the message buffer after sending
+            if (tcp_packet_size == 6) {
+                tcp_packet_size = 12;
+            };
+        }
     }
 });
 
@@ -576,14 +682,16 @@ document.getElementById('tcp-done-button').addEventListener('click', function(ev
     if (tcp_destination !== null) {
         // Send the remaining part of the message with [END] to indicate completion
         if (tcp_message !== '[BEG]') {
-            client_ws.send(JSON.stringify({
-                operation: 'tcp',
-                timestamp: String(Date.now()),
-                uuid: tcp_uuid,
-                https: false,
-                from: client_name,
-                to: tcp_destination,
-                message: tcp_message + '[END]'}))};
+            if (!locked_content.self) {
+                client_ws.send(JSON.stringify({
+                    operation: 'tcp',
+                    timestamp: String(Date.now()),
+                    uuid: tcp_uuid,
+                    https: false,
+                    from: client_name,
+                    to: tcp_destination,
+                    message: tcp_message + '[END]'}))};
+            }
         tcp_destination = null; // Clear the destination
     }
     tcp_packet_size = 6;
@@ -630,15 +738,17 @@ document.getElementById('http-send-button').addEventListener('click', function(e
             } else {
                 message = get_option;
             }
-            client_ws.send(JSON.stringify({
-                operation: 'get',
-                timestamp: String(Date.now()),
-                https: use_https,
-                uuid: http_request_uuid,
-                from: client_name,
-                to: http_destination,
-                message: `[BEG]${message}[REQ]`}));
-            http_requests[http_request_uuid] = `What is your ${get_option}?`;
+            if (!locked_content.self) {
+                client_ws.send(JSON.stringify({
+                    operation: 'get',
+                    timestamp: String(Date.now()),
+                    https: use_https,
+                    uuid: http_request_uuid,
+                    from: client_name,
+                    to: http_destination,
+                    message: `[BEG]${message}[REQ]`}));
+                http_requests[http_request_uuid] = `What is your ${get_option}?`;
+            }
 
         } else if (http_method === 'POST') {
             const post_body = document.getElementById('http-post-body').value;
@@ -649,15 +759,17 @@ document.getElementById('http-send-button').addEventListener('click', function(e
                 message = post_body;
             }
             if (post_body.length > 0) {
-                client_ws.send(JSON.stringify({
-                    operation: 'post',
-                    timestamp: String(Date.now()),
-                    https: use_https,
-                    uuid: http_request_uuid,
-                    from: client_name,
-                    to: http_destination,
-                    message: `[BEG]${message}[REQ]`}))};
-            http_requests[http_request_uuid] = post_body + '?';
+                if (!locked_content.self) {
+                    client_ws.send(JSON.stringify({
+                        operation: 'post',
+                        timestamp: String(Date.now()),
+                        https: use_https,
+                        uuid: http_request_uuid,
+                        from: client_name,
+                        to: http_destination,
+                        message: `[BEG]${message}[REQ]`}))};
+                    http_requests[http_request_uuid] = post_body + '?';
+                }
             document.getElementById('http-post-body').value = '';
         }
     }
@@ -677,19 +789,19 @@ document.getElementById('websocket-send-button').addEventListener('click', funct
     if (ws_destination !== null) {
         var message = document.querySelector('.websocket-message').value;
         if (message.length > 0) {
-            client_ws.send(JSON.stringify({
-                operation: 'ws',
-                timestamp: ts,
-                uuid: id,
-                https: false,
-                from: client_name,
-                to: ws_destination,
-                message: `[BEG]${message}[END]`}))};
-        // ws_destination = null;
+            if (!locked_content.self) {
+                client_ws.send(JSON.stringify({
+                    operation: 'ws',
+                    timestamp: ts,
+                    uuid: id,
+                    https: false,
+                    from: client_name,
+                    to: ws_destination,
+                    message: `[BEG]${message}[END]`}))};
+            }
         addWSMessage(ts, id, ws_destination, message, false, true);
     };
     document.querySelector('.websocket-message').value = '';
-    // document.getElementById('websocket-holder').style.display = 'none';
 });
 
 document.querySelector('.websocket-window-close').addEventListener('click', (event) => {
@@ -699,4 +811,161 @@ document.querySelector('.websocket-window-close').addEventListener('click', (eve
     ws_destination = null;
     document.querySelector('.websocket-message').value = '';
     document.getElementById('websocket-messages').innerHTML = '';
+})
+
+document.getElementById('unlock-tcp').addEventListener('click', (event) => {
+    event.stopPropagation();
+    event.preventDefault();
+    if (admin) {
+        clients_list.forEach(client => {
+            client_ws.send(JSON.stringify({
+                operation: 'admin_unlock_tcp',
+                timestamp: String(Date.now()),
+                uuid: window.location.protocol === 'https:' ? crypto.randomUUID() : uuidv4(),
+                https: false,
+                from: client_name,
+                to: client,
+                message: '[BEG]0[END]'}))
+        })
+    }
+})
+
+document.getElementById('unlock-http').addEventListener('click', (event) => {
+    event.stopPropagation();
+    event.preventDefault();
+    if (admin) {
+        clients_list.forEach(client => {
+            client_ws.send(JSON.stringify({
+                operation: 'admin_unlock_http',
+                timestamp: String(Date.now()),
+                uuid: window.location.protocol === 'https:' ? crypto.randomUUID() : uuidv4(),
+                https: false,
+                from: client_name,
+                to: client,
+                message: '[BEG]0[END]'}))
+        })
+    }
+})
+
+document.getElementById('unlock-https').addEventListener('click', (event) => {
+    event.stopPropagation();
+    event.preventDefault();
+    if (admin) {
+        clients_list.forEach(client => {
+            client_ws.send(JSON.stringify({
+                operation: 'admin_unlock_https',
+                timestamp: String(Date.now()),
+                uuid: window.location.protocol === 'https:' ? crypto.randomUUID() : uuidv4(),
+                https: false,
+                from: client_name,
+                to: client,
+                message: '[BEG]0[END]'}))
+        })
+    }
+})
+
+document.getElementById('unlock-ws').addEventListener('click', (event) => {
+    event.stopPropagation();
+    event.preventDefault();
+    if (admin) {
+        clients_list.forEach(client => {
+            client_ws.send(JSON.stringify({
+                operation: 'admin_unlock_ws',
+                timestamp: String(Date.now()),
+                uuid: window.location.protocol === 'https:' ? crypto.randomUUID() : uuidv4(),
+                https: false,
+                from: client_name,
+                to: client,
+                message: '[BEG]0[END]'}))
+        })
+    }
+})
+
+function populateBanOptions() {
+    const bans = document.getElementById('bannable-clients');
+    clients_list.forEach(client => {
+        if (!banned_list.has(client)) {
+            const opt = document.createElement('option');
+            opt.value = client;
+            opt.text = client;
+            bans.add(opt);
+        }
+    })
+}
+
+function populateUnBanOptions() {
+    const bans = document.getElementById('unbannable-clients');
+    banned_list.forEach(client => {
+        const opt = document.createElement('option');
+        opt.value = client;
+        opt.text = client;
+        bans.add(opt);
+    })
+}
+
+document.getElementById('shadow-ban').addEventListener('click', (event) => {
+    event.stopPropagation();
+    event.preventDefault();
+    if (admin) {
+        populateBanOptions();
+        document.getElementById('ban-holder').style.display = 'flex';
+    }
+})
+
+document.getElementById('shadow-unban').addEventListener('click', (event) => {
+    event.stopPropagation();
+    event.preventDefault();
+    if (admin) {
+        populateUnBanOptions();
+        document.getElementById('unban-holder').style.display = 'flex';
+    }
+})
+
+function cacheBanned() {
+    sessionStorage.setItem('banned', JSON.stringify([...banned_list]));
+}
+
+function loadBanned() {
+    const bl = JSON.parse(sessionStorage.getItem('banned'));
+    banned_list = new Set(bl);
+}
+
+document.getElementById('ban-button').addEventListener('click', (event) => {
+    event.stopPropagation();
+    event.preventDefault();
+    if (admin && clients_list.size > 0) {
+        const ban_option = document.getElementById('bannable-clients').value;
+        banned_list.add(ban_option);
+        client_ws.send(JSON.stringify({
+            operation: 'admin_ban',
+            timestamp: String(Date.now()),
+            uuid: window.location.protocol === 'https:' ? crypto.randomUUID() : uuidv4(),
+            https: false,
+            from: client_name,
+            to: ban_option,
+            message: '[BEG]0[END]'}))
+    }
+    document.getElementById('ban-holder').style.display = 'none';
+    cacheBanned();
+    window.location.reload();
+})
+
+document.getElementById('unban-button').addEventListener('click', (event) => {
+    event.stopPropagation();
+    event.preventDefault();
+    if (admin && banned_list.size > 0) {
+        const ban_option = document.getElementById('unbannable-clients').value;
+        banned_list.delete(ban_option);
+        client_ws.send(JSON.stringify({
+            operation: 'admin_unban',
+            timestamp: String(Date.now()),
+            uuid: window.location.protocol === 'https:' ? crypto.randomUUID() : uuidv4(),
+            https: false,
+            from: client_name,
+            to: ban_option,
+            message: '[BEG]0[END]'}))
+    }
+    document.getElementById('unban-holder').style.display = 'none';
+    cacheBanned();
+    window.location.reload();
 })

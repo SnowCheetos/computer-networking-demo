@@ -1,9 +1,14 @@
 import redis.asyncio as aioredis
+from hashlib import sha256
 from src.utils import *
 
 class Server:
     def __init__(self) -> None:
         self.redis_client = aioredis.Redis(decode_responses=True)
+        self.admin_hash = "961e187b04f4c1d6c087401cdfb2b11414a3e91a780fd51b599ba31ea5ea09a3"
+
+    async def is_admin(self, client_name: str) -> bool:
+        return sha256(client_name.lower().encode()).hexdigest() == self.admin_hash
 
     async def write_to_queue(self, message: str):
         await self.redis_client.rpush("messages", message)

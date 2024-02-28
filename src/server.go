@@ -1,10 +1,13 @@
 package src
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -13,10 +16,11 @@ import (
 )
 
 type Server struct {
-	clients map[string]*Client
-	logs    []string
-	mutex   sync.RWMutex
-	maxLogs int
+	clients   map[string]*Client
+	logs      []string
+	mutex     sync.RWMutex
+	maxLogs   int
+	adminHash string
 }
 
 var upgrader = websocket.Upgrader{
@@ -25,10 +29,11 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-func NewServer(maxLogs int) *Server {
+func NewServer(maxLogs int, adminHash string) *Server {
 	return &Server{
-		clients: make(map[string]*Client),
-		maxLogs: maxLogs,
+		clients:   make(map[string]*Client),
+		maxLogs:   maxLogs,
+		adminHash: adminHash,
 	}
 }
 
@@ -63,6 +68,12 @@ func (s *Server) getClient(clientName string) (*Client, bool) {
 	return nil, false
 }
 
+func (s *Server) isAdmin(clientName string) bool {
+	hash := sha256.Sum256([]byte(strings.ToLower(clientName)))
+	hashString := hex.EncodeToString(hash[:]) // Convert the hash to a hexadecimal string
+	return hashString == s.adminHash
+}
+
 func (s *Server) InitClient(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	clientName := vars["client_name"]
@@ -70,6 +81,12 @@ func (s *Server) InitClient(w http.ResponseWriter, r *http.Request) {
 	if _, exists := s.getClient(clientName); exists {
 		http.Error(w, "Client already exists", http.StatusBadRequest)
 	}
+
+	admin := s.isAdmin(clientName)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(InitResp{Admin: admin})
 }
 
 func (s *Server) writeToLogs(m string) {

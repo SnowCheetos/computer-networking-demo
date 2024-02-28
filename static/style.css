@@ -60,6 +60,85 @@ html, body {
     gap: 10px;
 }
 
+#admin-container {
+    display: none;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    height: 100%;
+    width: 100%;
+    flex-direction: column;
+    overflow: hidden;
+    align-items: center;
+}
+
+#admin-commands-tag {
+    position: relative;
+    width: 100%;
+    text-align: center;
+    background-color: #f3f1f1;
+    padding: 5px;
+}
+
+#admin-commands-holder {
+    overflow: auto;
+    height: 100%;
+    width: 70%;
+}
+
+#admin-commands {
+    list-style: none;
+    padding: 10px;
+}
+
+#unlock-tcp,
+#unlock-http,
+#unlock-https,
+#unlock-ws,
+#shadow-ban,
+#shadow-unban
+{
+    border: 1px solid black;
+    margin-bottom: 10px;
+    padding: 5px;
+    text-align: center;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+#unlock-tcp{
+    background-color: rgb(255, 176, 176);
+}
+
+#unlock-http {
+    background-color: rgb(163, 255, 77);
+}
+
+#unlock-https {
+    background-color: rgb(241, 130, 249);
+}
+
+#unlock-ws {
+    background-color: rgb(249, 211, 130);
+}
+
+#shadow-ban {
+    background-color: rgb(255, 159, 69);
+}
+
+#shadow-unban {
+    background-color: rgb(69, 255, 255);
+}
+
+#unlock-tcp:hover,
+#unlock-http:hover,
+#unlock-https:hover,
+#unlock-ws:hover,
+#shadow-ban:hover,
+#shadow-unban:hover
+{
+    box-shadow: 1px 1px 1px #373737;
+}
+
 #clients-list-holder {
     border: 1px solid #ddd;
     border-radius: 4px;
@@ -659,6 +738,27 @@ html, body {
         border: 1px solid #141414;
         border-radius: 3px;
     }
+}
+
+#ban-holder,
+#unban-holder
+{
+    display: none;
+    position: absolute;
+    width: auto;
+    height: auto;
+    padding: 10px;
+    gap: 10px;
+    border: 1px solid #141414;
+    border-radius: 3px;
+    background-color: rgb(245, 245, 245);
+    align-items: center;
+    flex-direction: column;
+    margin: 5px;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
 }
 
 textarea {
